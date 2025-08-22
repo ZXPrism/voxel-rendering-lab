@@ -1,0 +1,128 @@
+#include <shader_program.h>
+
+#include <logger.h>
+
+#include <fstream>
+#include <regex>
+#include <sstream>
+
+namespace vrl {
+
+void ShaderProgram::use() {
+	glUseProgram(*_Program);
+}
+
+Shader::ShaderBuilder(const std::string &name)
+    : _Name(name) {
+}
+
+Shader::ShaderBuilder &Shader::ShaderBuilder::set_type(ShaderType shader_type) {
+	_ShaderType = shader_type;
+	return *this;
+}
+
+Shader::ShaderBuilder &Shader::ShaderBuilder::set_source(const std::string &shader_source) {
+	_Source = shader_source;
+	return *this;
+}
+
+Shader::ShaderBuilder &Shader::ShaderBuilder::set_source_from_file(const std::string &source_file_path) {
+	std::ifstream fin(source_file_path);
+	if (!fin) {
+		g_logger->warn("Shader::ShaderBuilder: failed to load shader source file from {}", source_file_path);
+		return *this;
+	}
+
+	std::stringstream ssm;
+	ssm << fin.rdbuf();
+	_Source = ssm.str();
+	fin.close();
+
+	return *this;
+}
+
+Shader Shader::ShaderBuilder::build() const {
+	Shader res;
+
+	GLuint *raw_shader_handle = new GLuint(0);
+	res._ShaderHandle = std::shared_ptr<GLuint>(raw_shader_handle, [](GLuint *ptr) {
+		glDeleteShader(*ptr);
+		delete ptr;
+	});
+
+	switch (_ShaderType) {
+	case ShaderType::VERTEX_SHADER:
+		*res._ShaderHandle = glCreateShader(GL_VERTEX_SHADER);
+		break;
+	case ShaderType::FRAGMENT_SHADER:
+		*res._ShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
+		break;
+	case ShaderType::COMPUTE_SHADER:
+		*res._ShaderHandle = glCreateShader(GL_COMPUTE_SHADER);
+		break;
+	default:
+		g_logger->warn("Shader::ShaderBuilder: unknown shader type, renderer may not work correctly");
+		return res;
+	}
+
+	const char *const shader_src = _Source.c_str();
+	glShaderSource(*res._ShaderHandle, 1, &shader_src, nullptr);
+	glCompileShader(*res._ShaderHandle);
+
+	GLint compile_status;
+	glGetShaderiv(*res._ShaderHandle, GL_COMPILE_STATUS, &compile_status);
+	if (!compile_status) {
+		static char compile_log[1024];
+		glGetShaderInfoLog(*res._ShaderHandle, sizeof(compile_log), nullptr, compile_log);
+		g_logger->warn("Shader::ShaderBuilder: shader compilation failed:\n{}", compile_log);
+	}
+
+	std::regex pattern(R"(uniform\s+(\w+)\s+(\w+);)");
+	std::smatch match;
+	auto targetIter = _Source.cbegin();
+	while (std::regex_search(targetIter, _Source.cend(), match, pattern)) {
+		targetIter = match[0].second;
+		res._Uniforms.insert(match[1].str());
+		g_logger->info("Shader::ShaderBuilder: detected uniform {} with type {}", match[1].str(), match[2].str());
+	}
+
+	return res;
+}
+
+GLuint Shader::get_handle() const {
+	return *_ShaderHandle;
+}
+
+ShaderProgram::ShaderProgramBuilder &ShaderProgram::ShaderProgramBuilder::add_shader(const Shader &shader) {
+	_Shaders.push_back(shader);
+	return *this;
+}
+
+ShaderProgram ShaderProgram::ShaderProgramBuilder::build() const {
+	ShaderProgram res;
+
+	GLuint *raw_program_handle = new GLuint(0);
+	res._Program = std::shared_ptr<GLuint>(raw_program_handle, [](GLuint *ptr) {
+		glDeleteProgram(*ptr);
+		delete ptr;
+	});
+
+	*res._Program = glCreateProgram();
+
+	for (const auto &shader : _Shaders) {
+		glAttachShader(*res._Program, shader.get_handle());
+	}
+	glLinkProgram(*res._Program);
+
+	GLint link_status;
+	glGetProgramiv(*res._Program, GL_LINK_STATUS, &link_status);
+	if (!link_status) {
+		static char link_log[1024];
+		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
+		g_logger->warn("Shader::ShaderBuilder: program link failed:\n{}", link_log);
+	}
+
+	return res;
+}
+
+}  // namespace vrl
