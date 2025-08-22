@@ -12,8 +12,8 @@ void ShaderProgram::use() {
 	glUseProgram(*_Program);
 }
 
-Shader::ShaderBuilder(const std::string &name)
-    : _Name(name) {
+Shader::ShaderBuilder::ShaderBuilder(const std::string &name)
+    : IBuilder(name) {
 }
 
 Shader::ShaderBuilder &Shader::ShaderBuilder::set_type(ShaderType shader_type) {
@@ -29,7 +29,7 @@ Shader::ShaderBuilder &Shader::ShaderBuilder::set_source(const std::string &shad
 Shader::ShaderBuilder &Shader::ShaderBuilder::set_source_from_file(const std::string &source_file_path) {
 	std::ifstream fin(source_file_path);
 	if (!fin) {
-		g_logger->warn("Shader::ShaderBuilder: failed to load shader source file from {}", source_file_path);
+		g_logger->warn("Shader::ShaderBuilder ({}): failed to load shader source file from {}", _Name, source_file_path);
 		return *this;
 	}
 
@@ -61,7 +61,7 @@ Shader Shader::ShaderBuilder::build() const {
 		*res._ShaderHandle = glCreateShader(GL_COMPUTE_SHADER);
 		break;
 	default:
-		g_logger->warn("Shader::ShaderBuilder: unknown shader type, renderer may not work correctly");
+		g_logger->warn("Shader::ShaderBuilder ({}): unknown shader type, renderer may not work correctly", _Name);
 		return res;
 	}
 
@@ -74,7 +74,7 @@ Shader Shader::ShaderBuilder::build() const {
 	if (!compile_status) {
 		static char compile_log[1024];
 		glGetShaderInfoLog(*res._ShaderHandle, sizeof(compile_log), nullptr, compile_log);
-		g_logger->warn("Shader::ShaderBuilder: shader compilation failed:\n{}", compile_log);
+		g_logger->warn("Shader::ShaderBuilder ({}): shader compilation failed:\n{}", _Name, compile_log);
 	}
 
 	std::regex pattern(R"(uniform\s+(\w+)\s+(\w+);)");
@@ -83,7 +83,7 @@ Shader Shader::ShaderBuilder::build() const {
 	while (std::regex_search(targetIter, _Source.cend(), match, pattern)) {
 		targetIter = match[0].second;
 		res._Uniforms.insert(match[1].str());
-		g_logger->info("Shader::ShaderBuilder: detected uniform {} with type {}", match[1].str(), match[2].str());
+		g_logger->info("Shader::ShaderBuilder ({}): detected uniform {} with type {}", _Name, match[1].str(), match[2].str());
 	}
 
 	return res;
@@ -91,6 +91,10 @@ Shader Shader::ShaderBuilder::build() const {
 
 GLuint Shader::get_handle() const {
 	return *_ShaderHandle;
+}
+
+ShaderProgram::ShaderProgramBuilder::ShaderProgramBuilder(const std::string &name)
+    : IBuilder(name) {
 }
 
 ShaderProgram::ShaderProgramBuilder &ShaderProgram::ShaderProgramBuilder::add_shader(const Shader &shader) {
@@ -119,7 +123,7 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::build() const {
 	if (!link_status) {
 		static char link_log[1024];
 		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
-		g_logger->warn("Shader::ShaderBuilder: program link failed:\n{}", link_log);
+		g_logger->warn("Shader::ShaderBuilder ({}): program link failed:\n{}", _Name, link_log);
 	}
 
 	return res;

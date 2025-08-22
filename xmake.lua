@@ -2,6 +2,7 @@ set_project("voxel-rendering-lab")
 
 add_rules("mode.debug", "mode.release")
 add_requires("spdlog", "glm", "glad", "glfw")
+add_requires("imgui", {configs = { glfw = true, opengl3 = true }})
 
 target("voxel-rendering-lab")
     set_languages("cxx20")
@@ -10,7 +11,7 @@ target("voxel-rendering-lab")
 
     add_includedirs("src")
     add_files("src/**.cpp")
-    add_packages("spdlog", "glm", "glad", "glfw")
+    add_packages("spdlog", "glm", "glad", "glfw", "imgui")
 
     after_build(function (target)
         os.cp(target:targetfile(), "bin/")

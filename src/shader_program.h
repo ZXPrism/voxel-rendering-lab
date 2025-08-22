@@ -5,6 +5,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <interfaces/builder.h>
+
 #include <glad/glad.h>
 
 namespace vrl {
@@ -33,11 +35,10 @@ private:
 	std::unordered_set<std::string> _Uniforms;
 
 public:
-	class ShaderBuilder {
+	class ShaderBuilder : IBuilder<ShaderBuilder> {
 	private:
 		ShaderType _ShaderType = ShaderType::UNKNOWN;
 		std::string _Source;
-		std::string _Name;
 
 	public:
 		ShaderBuilder(const std::string &name);
@@ -46,7 +47,6 @@ public:
 		ShaderBuilder &set_source(const std::string &shader_source);
 		ShaderBuilder &set_source_from_file(const std::string &source_file_path);
 
-		// TODO: auto sense uniforms
 		Shader build() const;
 	};
 
@@ -61,11 +61,13 @@ private:
 	std::shared_ptr<GLuint> _Program;
 
 public:
-	class ShaderProgramBuilder {
+	class ShaderProgramBuilder : IBuilder<ShaderProgramBuilder> {
 	private:
 		std::vector<Shader> _Shaders;
 
 	public:
+		ShaderProgramBuilder(const std::string &name);
+
 		ShaderProgramBuilder &add_shader(const Shader &shader);
 
 		ShaderProgram build() const;
