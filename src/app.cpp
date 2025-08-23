@@ -67,7 +67,7 @@ void App::run(const std::function<void(float)> &callback) {
 		delta_time_cnt += delta_time;
 		t1 = t2;
 
-		if (delta_time_cnt >= 1.0f) {
+		if (delta_time_cnt >= 0.5f) {
 			delta_time_cnt = 0.0f;
 
 			fps_smooth = static_cast<int>(fps_smooth * config::fps_lerp_coeff + 1.0f / delta_time * (1 - config::fps_lerp_coeff));

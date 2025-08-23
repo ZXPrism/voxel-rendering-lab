@@ -8,8 +8,16 @@
 
 namespace vrl {
 
-void ShaderProgram::use() {
+void ShaderProgram::use() const {
 	glUseProgram(*_Program);
+}
+
+void ShaderProgram::set_uniform(const std::string &name, const glm::mat4 &matrix) {
+	glUniformMatrix4fv(_MapUniformNameToLocation[name], 1, false, &matrix[0][0]);
+}
+
+void ShaderProgram::set_uniform(const std::string &name, const glm::vec3 &vector) {
+	glUniform3fv(_MapUniformNameToLocation[name], 1, &vector[0]);
 }
 
 Shader::ShaderBuilder::ShaderBuilder(const std::string &name)
@@ -41,7 +49,7 @@ Shader::ShaderBuilder &Shader::ShaderBuilder::set_source_from_file(const std::st
 	return *this;
 }
 
-Shader Shader::ShaderBuilder::build() const {
+Shader Shader::ShaderBuilder::_build() const {
 	Shader res;
 
 	GLuint *raw_shader_handle = new GLuint(0);
@@ -89,8 +97,12 @@ Shader Shader::ShaderBuilder::build() const {
 	return res;
 }
 
-GLuint Shader::get_handle() const {
+GLuint Shader::_get_handle() const {
 	return *_ShaderHandle;
+}
+
+const std::unordered_set<std::string> &Shader::_get_uniforms() const {
+	return _Uniforms;
 }
 
 ShaderProgram::ShaderProgramBuilder::ShaderProgramBuilder(const std::string &name)
@@ -102,19 +114,17 @@ ShaderProgram::ShaderProgramBuilder &ShaderProgram::ShaderProgramBuilder::add_sh
 	return *this;
 }
 
-ShaderProgram ShaderProgram::ShaderProgramBuilder::build() const {
+ShaderProgram ShaderProgram::ShaderProgramBuilder::_build() const {
 	ShaderProgram res;
 
-	GLuint *raw_program_handle = new GLuint(0);
+	GLuint *raw_program_handle = new GLuint(glCreateProgram());
 	res._Program = std::shared_ptr<GLuint>(raw_program_handle, [](GLuint *ptr) {
 		glDeleteProgram(*ptr);
 		delete ptr;
 	});
 
-	*res._Program = glCreateProgram();
-
 	for (const auto &shader : _Shaders) {
-		glAttachShader(*res._Program, shader.get_handle());
+		glAttachShader(*res._Program, shader._get_handle());
 	}
 	glLinkProgram(*res._Program);
 
@@ -124,6 +134,14 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::build() const {
 		static char link_log[1024];
 		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
 		g_logger->warn("Shader::ShaderBuilder ({}): program link failed:\n{}", _Name, link_log);
+	}
+
+	// collect uniforms and query their locations in advance
+	for (const auto &shader : _Shaders) {
+		auto &uniform_names = shader._get_uniforms();
+		for (const auto &uniform_name : uniform_names) {
+			res._MapUniformNameToLocation[uniform_name] = glGetUniformLocation(*res._Program, uniform_name.c_str());
+		}
 	}
 
 	return res;
