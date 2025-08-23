@@ -83,6 +83,18 @@ void App::shutdown() {
 	_shutdown_window();
 }
 
+void App::set_flag_vsync(bool flag) const {
+	glfwSwapInterval(flag ? 1 : 0);
+}
+
+void App::set_flag_depth_test(bool flag) const {
+	if (flag) {
+		glEnable(GL_DEPTH_TEST);
+	} else {
+		glDisable(GL_DEPTH_TEST);
+	}
+}
+
 float App::get_aspect_ratio() const {
 	return 1.0f * _WindowWidth / _WindowHeight;
 }
@@ -173,9 +185,6 @@ void App::_init_window() {
 	auto vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	glfwSetWindowPos(_Window, (vidmode->width - _WindowWidth) / 2, (vidmode->height - _WindowHeight) / 2);
 
-	// vsync
-	glfwSwapInterval(0);  // 0: off, 1: on
-
 	glfwSetInputMode(_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
@@ -186,7 +195,6 @@ void App::_init_opengl() {
 	}
 
 	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_DEPTH_TEST);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glViewport(0, 0, _WindowWidth, _WindowHeight);

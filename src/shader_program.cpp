@@ -90,7 +90,7 @@ Shader Shader::ShaderBuilder::_build() const {
 	auto targetIter = _Source.cbegin();
 	while (std::regex_search(targetIter, _Source.cend(), match, pattern)) {
 		targetIter = match[0].second;
-		res._Uniforms.insert(match[1].str());
+		res._Uniforms.insert(match[2].str());
 		g_logger->info("Shader::ShaderBuilder ({}): detected uniform {} with type {}", _Name, match[1].str(), match[2].str());
 	}
 
@@ -133,14 +133,20 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::_build() const {
 	if (!link_status) {
 		static char link_log[1024];
 		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
-		g_logger->warn("Shader::ShaderBuilder ({}): program link failed:\n{}", _Name, link_log);
+		g_logger->warn("ShaderProgram::ShaderProgramBuilder ({}): program link failed:\n{}", _Name, link_log);
 	}
 
 	// collect uniforms and query their locations in advance
 	for (const auto &shader : _Shaders) {
 		auto &uniform_names = shader._get_uniforms();
 		for (const auto &uniform_name : uniform_names) {
-			res._MapUniformNameToLocation[uniform_name] = glGetUniformLocation(*res._Program, uniform_name.c_str());
+			if (!res._MapUniformNameToLocation.contains(uniform_name)) {
+				res._MapUniformNameToLocation[uniform_name] = glGetUniformLocation(*res._Program, uniform_name.c_str());
+				g_logger->info("ShaderProgram::ShaderProgramBuilder ({}): uniform {}'s location is {}",
+				               _Name,
+				               uniform_name,
+				               res._MapUniformNameToLocation[uniform_name]);
+			}
 		}
 	}
 

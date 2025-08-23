@@ -1,6 +1,7 @@
 #pragma once
 
 #include <config.h>
+#include <interfaces/singleton.h>
 
 #include <functional>
 
@@ -14,7 +15,7 @@ using OnMouseButtonFunc = std::function<void(int button, int action, int mods)>;
 using OnScrollFunc = std::function<void(double x_offset, double y_offset)>;
 using OnWindowSizeFunc = std::function<void(int width, int height)>;
 
-class App {
+class App : public Singleton<App> {
 private:
 	GLFWwindow *_Window;
 
@@ -31,6 +32,9 @@ public:
 	void init();
 	void run(const std::function<void(float delta_time)> &callback);
 	void shutdown();
+
+	void set_flag_vsync(bool flag) const;
+	void set_flag_depth_test(bool flag) const;
 
 	float get_aspect_ratio() const;
 	bool check_key_pressed(int key) const;

@@ -1,5 +1,9 @@
 #include <vertex_buffer.h>
 
+#include <numeric>
+
+#include <logger.h>
+
 namespace vrl {
 
 VertexBuffer::VertexBufferBuilder::VertexBufferBuilder(const std::string &name, const std::vector<float> &data)
@@ -34,10 +38,18 @@ VertexBuffer VertexBuffer::VertexBufferBuilder::_build() const {
 	glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(_Data.size() * sizeof(float)), _Data.data(), GL_STATIC_DRAW);
 
 	size_t n_attrs = _AttrSizes.size();
-	for (size_t i = 0, offset = 0; i < n_attrs; i++) {
-		glVertexAttribPointer(static_cast<GLuint>(i), static_cast<GLint>(_AttrSizes[i]), GL_FLOAT, GL_FALSE, 0, reinterpret_cast<const void *>(offset));
+	size_t stride_bytes = std::accumulate(_AttrSizes.begin(), _AttrSizes.end(), static_cast<size_t>(0)) * sizeof(float);
+	for (size_t i = 0, offset_bytes = 0; i < n_attrs; i++) {
+		glVertexAttribPointer(static_cast<GLuint>(i),
+		                      static_cast<GLint>(_AttrSizes[i]),
+		                      GL_FLOAT,
+		                      GL_FALSE,
+		                      static_cast<GLsizei>(stride_bytes),
+		                      reinterpret_cast<const void *>(offset_bytes));
 		glEnableVertexAttribArray(static_cast<GLuint>(i));
-		offset += _AttrSizes[i];
+		offset_bytes += _AttrSizes[i] * sizeof(float);
+
+		g_logger->info("VertexBuffer::VertexBufferBuilder ({}): enabled vertex attribute {} with {} components", _Name, i, _AttrSizes[i]);
 	}
 
 	glBindVertexArray(0);

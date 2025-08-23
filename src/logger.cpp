@@ -17,7 +17,7 @@ auto init_logger = []() {
 	std::vector<spdlog::sink_ptr> sinks{ console_sink, file_sink };
 
 	g_logger = std::make_shared<spdlog::logger>("logger", sinks.begin(), sinks.end());
-	g_logger->set_pattern("[%Y/%m/%d %H:%M:%S.%e] [%l] %v");
+	g_logger->set_pattern("[%Y/%m/%d %H:%M:%S.%e] [%^%l%$] %v");
 
 	return 0;
 }();

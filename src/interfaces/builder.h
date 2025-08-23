@@ -19,6 +19,10 @@ public:
 	BuildTarget build() const {
 		return static_cast<const Derived *>(this)->_build();
 	}
+
+protected:
+	IBuilder() = default;
+	~IBuilder() = default;
 };
 
 }  // namespace vrl

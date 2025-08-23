@@ -1,26 +1,22 @@
-#include <glad/glad.h>
-#include <cstdio>
-#include <cstdlib>
-#include <string>
-
 #include <app.h>
+#include <camera.h>
 #include <logger.h>
 #include <shader_program.h>
-#include <vertex_buffer.h>
+#include <world/world_flat.h>
+
+#include <glad/glad.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 int main() {
 	using namespace vrl;
 
-	App app;
+	auto &app = App::instance();
 	app.init();
+	app.set_flag_vsync(false);
+	app.set_flag_depth_test(true);
 
-	std::vector<float> verts = {
-		-0.6f, -0.5f, 0.0f,
-		0.6f, -0.5f, 0.0f,
-		0.0f, 0.6f, 0.0f
-	};
-	VertexBuffer::VertexBufferBuilder vertex_buffer_builder("vert builder", verts);
-	auto vertex_buffer = vertex_buffer_builder.add_attribute(3).build();
+	// prepare camera
+	Camera camera;
 
 	// prepare shaders
 	ShaderProgram::ShaderProgramBuilder shader_program_builder("default_program");
@@ -34,11 +30,20 @@ int main() {
 		shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
 	}
 	auto shader_program = shader_program_builder.build();
+	shader_program.use();
+	shader_program.set_uniform("projection", camera.get_projection());
 
-	app.run([&](float dt [[maybe_unused]]) {
+	WorldFlat world_flat(1, 1, 1);
+
+	app.run([&](float dt) {
+		camera.update(dt);
+
 		shader_program.use();
-		vertex_buffer.use();
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glm::mat4 model(1.0f);
+		shader_program.set_uniform("model", model);
+		shader_program.set_uniform("view", camera.get_view());
+
+		world_flat.render();
 	});
 
 	return 0;
