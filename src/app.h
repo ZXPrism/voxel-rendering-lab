@@ -5,6 +5,8 @@
 
 #include <functional>
 
+#include <glm/glm.hpp>
+
 struct GLFWwindow;
 
 namespace vrl {
@@ -35,6 +37,7 @@ public:
 
 	void set_flag_vsync(bool flag) const;
 	void set_flag_depth_test(bool flag) const;
+	void set_clear_color(const glm::vec3 &clear_color) const;
 
 	float get_aspect_ratio() const;
 	bool check_key_pressed(int key) const;

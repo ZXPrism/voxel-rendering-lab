@@ -29,9 +29,6 @@ public:
 	};
 
 	void use() const;
-
-private:
-	VertexBuffer() = default;
 };
 
 }  // namespace vrl

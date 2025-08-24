@@ -6,7 +6,7 @@ namespace vrl {
 
 class Camera {
 private:
-	float _MoveSpeed{ 5.0f };
+	float _MoveSpeed{ 10.0f };
 	float _MouseSens{ 0.1f };
 
 	glm::vec3 _Pos{ 0.0f, 0.0f, 0.0f };

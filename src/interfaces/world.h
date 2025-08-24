@@ -1,6 +1,9 @@
 #pragma once
 
+#include <shader_program.h>
 #include <world/voxel.h>
+
+#include <glm/gtc/noise.hpp>
 
 namespace vrl {
 
@@ -18,12 +21,31 @@ public:
 	    , _ExtentZ(extent_z) {
 	}
 
+	void init() {
+		for (size_t x = 0; x < _ExtentX; x++) {
+			for (size_t y = 0; y < _ExtentY; y++) {
+				for (size_t z = 0; z < _ExtentZ; z++) {
+					float noise = glm::perlin(glm::vec3(x, y, z) * 0.04f);
+					if (noise > 0.0f) {
+						get_voxel(x, y, z).type = -1;
+					} else {
+						get_voxel(x, y, z).type = 0;
+					}
+				}
+			}
+		}
+	}
+
 	Voxel &get_voxel(size_t x, size_t y, size_t z) {
+		return static_cast<Derived *>(this)->_get_voxel(x, y, z);
+	}
+
+	const Voxel &get_voxel(size_t x, size_t y, size_t z) const {
 		return static_cast<const Derived *>(this)->_get_voxel(x, y, z);
 	}
 
-	void render() const {
-		static_cast<const Derived *>(this)->_render();
+	void render(ShaderProgram &shader_program) const {
+		static_cast<const Derived *>(this)->_render(shader_program);
 	}
 
 protected:

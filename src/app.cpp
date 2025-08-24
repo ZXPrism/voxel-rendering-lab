@@ -35,26 +35,24 @@ void App::run(const std::function<void(float)> &callback) {
 	int fps_smooth = 0;
 
 	while (!glfwWindowShouldClose(_Window)) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		callback(delta_time);
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Begin("control");
-		{
-			static bool wireframe = false;
-			if (ImGui::Checkbox("wireframe mode", &wireframe)) {
-				if (wireframe) {
-					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				} else {
-					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				}
-			}
-		}
-		ImGui::End();
+		callback(delta_time);
+
+		// ImGui::Begin("control");
+		// {
+		// 	static bool wireframe = false;
+		// 	if (ImGui::Checkbox("wireframe mode", &wireframe)) {
+		// 		if (wireframe) {
+		// 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		// 		} else {
+		// 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		// 		}
+		// 	}
+		// }
+		// ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -93,6 +91,10 @@ void App::set_flag_depth_test(bool flag) const {
 	} else {
 		glDisable(GL_DEPTH_TEST);
 	}
+}
+
+void App::set_clear_color(const glm::vec3 &clear_color) const {
+	glClearColor(clear_color.r, clear_color.g, clear_color.b, 1.0f);
 }
 
 float App::get_aspect_ratio() const {

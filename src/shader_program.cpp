@@ -12,12 +12,31 @@ void ShaderProgram::use() const {
 	glUseProgram(*_Program);
 }
 
+void ShaderProgram::set_uniform(const std::string &name, int scalar) {
+	glUniform1i(get_uniform_location(name), scalar);
+}
+
 void ShaderProgram::set_uniform(const std::string &name, const glm::mat4 &matrix) {
-	glUniformMatrix4fv(_MapUniformNameToLocation[name], 1, false, &matrix[0][0]);
+	glUniformMatrix4fv(get_uniform_location(name), 1, false, &matrix[0][0]);
+}
+
+void ShaderProgram::set_uniform(const std::string &name, const glm::vec2 &vector) {
+	glUniform2fv(get_uniform_location(name), 1, &vector[0]);
 }
 
 void ShaderProgram::set_uniform(const std::string &name, const glm::vec3 &vector) {
-	glUniform3fv(_MapUniformNameToLocation[name], 1, &vector[0]);
+	glUniform3fv(get_uniform_location(name), 1, &vector[0]);
+}
+
+GLint ShaderProgram::get_uniform_location(const std::string &name) {
+	auto iter = _MapUniformNameToLocation.find(name);
+	if (iter != _MapUniformNameToLocation.end()) {
+		return iter->second;
+	} else {
+		GLint loc = glGetUniformLocation(*_Program, name.c_str());
+		_MapUniformNameToLocation[name] = loc;
+		return loc;
+	}
 }
 
 Shader::ShaderBuilder::ShaderBuilder(const std::string &name)
@@ -85,24 +104,11 @@ Shader Shader::ShaderBuilder::_build() const {
 		g_logger->warn("Shader::ShaderBuilder ({}): shader compilation failed:\n{}", _Name, compile_log);
 	}
 
-	std::regex pattern(R"(uniform\s+(\w+)\s+(\w+);)");
-	std::smatch match;
-	auto targetIter = _Source.cbegin();
-	while (std::regex_search(targetIter, _Source.cend(), match, pattern)) {
-		targetIter = match[0].second;
-		res._Uniforms.insert(match[2].str());
-		g_logger->info("Shader::ShaderBuilder ({}): detected uniform {} with type {}", _Name, match[1].str(), match[2].str());
-	}
-
 	return res;
 }
 
 GLuint Shader::_get_handle() const {
 	return *_ShaderHandle;
-}
-
-const std::unordered_set<std::string> &Shader::_get_uniforms() const {
-	return _Uniforms;
 }
 
 ShaderProgram::ShaderProgramBuilder::ShaderProgramBuilder(const std::string &name)
@@ -134,20 +140,6 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::_build() const {
 		static char link_log[1024];
 		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
 		g_logger->warn("ShaderProgram::ShaderProgramBuilder ({}): program link failed:\n{}", _Name, link_log);
-	}
-
-	// collect uniforms and query their locations in advance
-	for (const auto &shader : _Shaders) {
-		auto &uniform_names = shader._get_uniforms();
-		for (const auto &uniform_name : uniform_names) {
-			if (!res._MapUniformNameToLocation.contains(uniform_name)) {
-				res._MapUniformNameToLocation[uniform_name] = glGetUniformLocation(*res._Program, uniform_name.c_str());
-				g_logger->info("ShaderProgram::ShaderProgramBuilder ({}): uniform {}'s location is {}",
-				               _Name,
-				               uniform_name,
-				               res._MapUniformNameToLocation[uniform_name]);
-			}
-		}
 	}
 
 	return res;

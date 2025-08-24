@@ -17,7 +17,6 @@ namespace vrl {
 class Shader {
 private:
 	std::shared_ptr<GLuint> _ShaderHandle;
-	std::unordered_set<std::string> _Uniforms;
 
 public:
 	class ShaderBuilder : public IBuilder<ShaderBuilder, Shader> {
@@ -36,10 +35,6 @@ public:
 	};
 
 	GLuint _get_handle() const;
-	const std::unordered_set<std::string> &_get_uniforms() const;
-
-private:
-	Shader() = default;
 };
 
 class ShaderProgram {
@@ -60,12 +55,13 @@ public:
 		ShaderProgram _build() const;
 	};
 
+	void set_uniform(const std::string &name, int scalar);
 	void set_uniform(const std::string &name, const glm::mat4 &matrix);
+	void set_uniform(const std::string &name, const glm::vec2 &vector);
 	void set_uniform(const std::string &name, const glm::vec3 &vector);
-	void use() const;
+	GLint get_uniform_location(const std::string &name);
 
-private:
-	ShaderProgram() = default;
+	void use() const;
 };
 
 }  // namespace vrl
