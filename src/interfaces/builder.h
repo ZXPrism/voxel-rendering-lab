@@ -16,8 +16,8 @@ public:
 
 	std::string get_name() const { return _Name; }
 
-	BuildTarget build() const {
-		return static_cast<const Derived *>(this)->_build();
+	BuildTarget build() {
+		return static_cast<Derived *>(this)->_build();
 	}
 
 protected:
