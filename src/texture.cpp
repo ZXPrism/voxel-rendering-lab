@@ -48,6 +48,8 @@ Texture Texture::TextureBuilder::_build() {
 
 	g_logger->info("Texture::TextureBuilder ({}): successfully built texture", _Name);
 
+	res._set_complete();
+
 	return res;
 }
 

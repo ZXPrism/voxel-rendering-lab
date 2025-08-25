@@ -108,6 +108,8 @@ Shader Shader::ShaderBuilder::_build() const {
 		g_logger->warn("Shader::ShaderBuilder ({}): shader compilation failed:\n{}", _Name, compile_log);
 	}
 
+	res._set_complete();
+
 	return res;
 }
 
@@ -134,7 +136,9 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::_build() const {
 	});
 
 	for (const auto &shader : _Shaders) {
-		glAttachShader(*res._Program, shader._get_handle());
+		if (shader.is_complete()) {
+			glAttachShader(*res._Program, shader._get_handle());
+		}
 	}
 	glLinkProgram(*res._Program);
 
@@ -145,6 +149,8 @@ ShaderProgram ShaderProgram::ShaderProgramBuilder::_build() const {
 		glGetProgramInfoLog(*res._Program, sizeof(link_log), nullptr, link_log);
 		g_logger->warn("ShaderProgram::ShaderProgramBuilder ({}): program link failed:\n{}", _Name, link_log);
 	}
+
+	res._set_complete();
 
 	return res;
 }

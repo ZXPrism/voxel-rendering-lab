@@ -1,5 +1,6 @@
 #pragma once
 
+#include <interfaces/build_target.h>
 #include <interfaces/builder.h>
 
 #include <glad/glad.h>
@@ -9,7 +10,7 @@
 
 namespace vrl {
 
-class VertexBuffer {
+class VertexBuffer : public IBuildTarget<VertexBuffer> {
 private:
 	std::shared_ptr<GLuint> _VAO;
 	std::shared_ptr<GLuint> _VBO;

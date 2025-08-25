@@ -1,5 +1,6 @@
 #pragma once
 
+#include <interfaces/build_target.h>
 #include <interfaces/builder.h>
 
 #include <memory>
@@ -16,7 +17,7 @@ enum class TextureFormat {
 	// todo
 };
 
-class Texture {
+class Texture : public IBuildTarget<Texture> {
 private:
 	std::shared_ptr<GLuint> _TextureHandle;
 

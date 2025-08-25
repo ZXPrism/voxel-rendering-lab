@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include <interfaces/build_target.h>
 #include <interfaces/builder.h>
 #include <shader_types.h>
 
@@ -14,7 +15,7 @@
 
 namespace vrl {
 
-class Shader {
+class Shader : public IBuildTarget<Shader> {
 private:
 	std::shared_ptr<GLuint> _ShaderHandle;
 
@@ -37,7 +38,7 @@ public:
 	GLuint _get_handle() const;
 };
 
-class ShaderProgram {
+class ShaderProgram : public IBuildTarget<ShaderProgram> {
 private:
 	std::shared_ptr<GLuint> _Program;
 	std::unordered_map<std::string, GLint> _MapUniformNameToLocation;

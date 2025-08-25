@@ -1,6 +1,6 @@
 #include <world/world_flat.h>
 
-#include <cube_vertices.h>
+#include <vertices.h>
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>

@@ -13,6 +13,11 @@ RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::add_color_attachme
 	return *this;
 }
 
+RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::set_depth_attachment(const Texture &texture) {
+	_DepthAttachment = texture;
+	return *this;
+}
+
 RenderPass RenderPass::RenderPassBuilder::_build() {
 	RenderPass res;
 
@@ -33,7 +38,14 @@ RenderPass RenderPass::RenderPassBuilder::_build() {
 	for (size_t i = 0; i < n_color_attachments; i++) {
 		auto texture_handle = res._ColorAttachments[i]._get_handle();
 		attachments[i] = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + i);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_2D, texture_handle, 0);
+		if (res._ColorAttachments[i].is_complete()) {
+			glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_2D, texture_handle, 0);
+		}
+	}
+
+	if (_DepthAttachment.has_value()) {
+		res._DepthAttachment = _DepthAttachment.value();
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, res._DepthAttachment._get_handle(), 0);
 	}
 
 	glDrawBuffers(static_cast<GLsizei>(n_color_attachments), attachments.data());
@@ -46,6 +58,8 @@ RenderPass RenderPass::RenderPassBuilder::_build() {
 	g_logger->info("RenderPass::RenderPassBuilder ({}): successfully built render pass with {} color attachment(s)", _Name, n_color_attachments);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	res._set_complete();
 
 	return res;
 }

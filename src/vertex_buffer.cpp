@@ -54,6 +54,8 @@ VertexBuffer VertexBuffer::VertexBufferBuilder::_build() const {
 
 	glBindVertexArray(0);
 
+	res._set_complete();
+
 	return res;
 }
 
