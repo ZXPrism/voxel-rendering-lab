@@ -6,8 +6,8 @@ namespace vrl {
 
 namespace config {
 
-constexpr int initial_window_width [[maybe_unused]] = 1920;
-constexpr int initial_window_height [[maybe_unused]] = 1080;
+constexpr int initial_window_width [[maybe_unused]] = 800;
+constexpr int initial_window_height [[maybe_unused]] = 600;
 constexpr const char *window_title [[maybe_unused]] = "Voxel Rendering Lab";
 
 constexpr int opengl_ver_major [[maybe_unused]] = 4;
