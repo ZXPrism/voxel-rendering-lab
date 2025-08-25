@@ -71,6 +71,10 @@ Shader::ShaderBuilder &Shader::ShaderBuilder::set_source_from_file(const std::st
 Shader Shader::ShaderBuilder::_build() const {
 	Shader res;
 
+	if (_Source.empty()) {
+		return res;
+	}
+
 	GLuint *raw_shader_handle = new GLuint(0);
 	res._ShaderHandle = std::shared_ptr<GLuint>(raw_shader_handle, [](GLuint *ptr) {
 		glDeleteShader(*ptr);
