@@ -21,7 +21,7 @@ private:
 	std::shared_ptr<GLuint> _TextureHandle;
 
 public:
-	class TextureBuilder : IBuilder<TextureBuilder, Texture> {
+	class TextureBuilder : public IBuilder<TextureBuilder, Texture> {
 	private:
 		std::string _SourcePath;  // todo
 		size_t _Width;
