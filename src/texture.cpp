@@ -57,8 +57,8 @@ GLuint Texture::_get_handle() const {
 	return *_TextureHandle;
 }
 
-void Texture::use(size_t location) {
-	glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + location));
+void Texture::use(size_t texture_unit) {
+	glActiveTexture(static_cast<GLenum>(GL_TEXTURE0 + texture_unit));
 	glBindTexture(GL_TEXTURE_2D, *_TextureHandle);
 }
 

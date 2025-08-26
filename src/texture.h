@@ -41,7 +41,7 @@ public:
 	};
 
 	GLuint _get_handle() const;
-	void use(size_t location);
+	void use(size_t texture_unit);
 };
 
 }  // namespace vrl
