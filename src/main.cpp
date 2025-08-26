@@ -51,25 +51,25 @@ int main() {
 	                         .set_depth_attachment(depth)
 	                         .build();
 
-	// blur pass
-	auto blur_pass = RenderPass::RenderPassBuilder("blur_pass").build();
+	// fx pass
+	auto fx_pass = RenderPass::RenderPassBuilder("fx_pass").build();
 
-	ShaderProgram::ShaderProgramBuilder blur_pass_shader_program_builder("blur_pass_shader_program");
+	ShaderProgram::ShaderProgramBuilder fx_pass_shader_program_builder("fx_pass_shader_program");
 	{
-		Shader::ShaderBuilder vs_builder("blur_vs");
+		Shader::ShaderBuilder vs_builder("fx_vs");
 		auto vertex_shader = vs_builder
 		                         .set_type(ShaderType::VERTEX_SHADER)
-		                         .set_source_from_file("assets/blur.vert")
+		                         .set_source_from_file("assets/fx.vert")
 		                         .build();
 
-		Shader::ShaderBuilder fs_builder("blur_fs");
+		Shader::ShaderBuilder fs_builder("fx_fs");
 		auto fragment_shader = fs_builder
 		                           .set_type(ShaderType::FRAGMENT_SHADER)
-		                           .set_source_from_file("assets/blur.frag")
+		                           .set_source_from_file("assets/fx.frag")
 		                           .build();
-		blur_pass_shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
+		fx_pass_shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
 	}
-	auto blur_pass_shader_program = blur_pass_shader_program_builder.build();
+	auto fx_pass_shader_program = fx_pass_shader_program_builder.build();
 
 	auto quad_vertex_buffer = VertexBuffer::VertexBufferBuilder("fullscreen_quad", g_screen_quad_vertices)
 	                              .add_attribute(2)  // position (vec2)
@@ -91,13 +91,14 @@ int main() {
 			world_flat.render(geometry_pass_shader_program);
 		});
 
-		blur_pass.use([&]() {
-			glClear(GL_COLOR_BUFFER_BIT);
+		fx_pass.use([&]() {
+			fx_pass.clear(GL_COLOR_BUFFER_BIT);
 			app.set_flag_depth_test(false);
+
 			albedo.use(0);
 			quad_vertex_buffer.use();
-			blur_pass_shader_program.use();
-			blur_pass_shader_program.set_uniform("sampler", 0);
+			fx_pass_shader_program.use();
+			fx_pass_shader_program.set_uniform("sampler", 0);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		});
 	});
