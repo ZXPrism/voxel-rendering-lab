@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
+#include <ctime>
+
 int main() {
 	using namespace vrl;
 
@@ -99,6 +101,8 @@ int main() {
 			quad_vertex_buffer.use();
 			fx_pass_shader_program.use();
 			fx_pass_shader_program.set_uniform("sampler", 0);
+			fx_pass_shader_program.set_uniform("window_width", config::initial_window_width);
+			fx_pass_shader_program.set_uniform("window_height", config::initial_window_height);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		});
 	});

@@ -1,5 +1,3 @@
-// ground-glass-v1
-
 #version 460 core
 
 in vec2 _TexCoords;
