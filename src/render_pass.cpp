@@ -30,6 +30,10 @@ RenderPass RenderPass::RenderPassBuilder::_build() {
 		delete ptr;
 	});
 
+	if (!n_color_attachments && !_DepthAttachment.has_value()) {  // no attachments, fallback to default FBO
+		return res;
+	}
+
 	glGenFramebuffers(1, res._FBO.get());
 	glBindFramebuffer(GL_FRAMEBUFFER, *res._FBO);
 
@@ -64,8 +68,13 @@ RenderPass RenderPass::RenderPassBuilder::_build() {
 	return res;
 }
 
-void RenderPass::use() {
+void RenderPass::clear(int mask) const {
+	glClear(mask);
+}
+
+void RenderPass::use(const std::function<void()> &callback) const {
 	glBindFramebuffer(GL_FRAMEBUFFER, *_FBO);
+	callback();
 }
 
 }  // namespace vrl

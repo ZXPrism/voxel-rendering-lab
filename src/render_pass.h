@@ -4,6 +4,7 @@
 #include <interfaces/builder.h>
 #include <texture.h>
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -34,7 +35,8 @@ public:
 		RenderPass _build();
 	};
 
-	void use();
+	void clear(int mask) const;
+	void use(const std::function<void()> &callback) const;
 
 private:
 	RenderPass() = default;

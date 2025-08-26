@@ -47,8 +47,8 @@ int main() {
 	                 .set_format(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT)
 	                 .build();
 	auto geometry_pass = RenderPass::RenderPassBuilder("geometry_pass")
-	                         .add_color_attachment(albedo)
-	                         .set_depth_attachment(depth)
+	                         //  .add_color_attachment(albedo)
+	                         //  .set_depth_attachment(depth)
 	                         .build();
 
 	ShaderProgram::ShaderProgramBuilder blur_pass_shader_program_builder("blur_pass_shader_program");
@@ -79,21 +79,22 @@ int main() {
 	app.run([&](float dt) {
 		camera.update(dt);
 
-		geometry_pass.use();
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		app.set_flag_depth_test(true);
-		geometry_pass_shader_program.use();
-		geometry_pass_shader_program.set_uniform("view", camera.get_view());
-		world_flat.render(geometry_pass_shader_program);
+		geometry_pass.use([&]() {
+			geometry_pass.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			app.set_flag_depth_test(true);
+			geometry_pass_shader_program.use();
+			geometry_pass_shader_program.set_uniform("view", camera.get_view());
+			world_flat.render(geometry_pass_shader_program);
+		});
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		app.set_flag_depth_test(false);
-		albedo.use(0);
-		quad_vertex_buffer.use();
-		blur_pass_shader_program.use();
-		blur_pass_shader_program.set_uniform("sampler", 0);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// glClear(GL_COLOR_BUFFER_BIT);
+		// app.set_flag_depth_test(false);
+		// albedo.use(0);
+		// quad_vertex_buffer.use();
+		// blur_pass_shader_program.use();
+		// blur_pass_shader_program.set_uniform("sampler", 0);
+		// glDrawArrays(GL_TRIANGLES, 0, 6);
 	});
 
 	app.shutdown();
