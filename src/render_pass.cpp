@@ -24,13 +24,17 @@ RenderPass RenderPass::RenderPassBuilder::_build() {
 	size_t n_color_attachments = _ColorAttachments.size();
 	res._ColorAttachments = _ColorAttachments;
 
+	bool fallback = !n_color_attachments && !_DepthAttachment.has_value();  // no attachments, fallback to default FBO
+
 	auto fbo_raw_handle = new GLuint(0);
-	res._FBO = std::shared_ptr<GLuint>(fbo_raw_handle, [&](GLuint *ptr) {
-		glDeleteFramebuffers(1, ptr);
+	res._FBO = std::shared_ptr<GLuint>(fbo_raw_handle, [=](GLuint *ptr) {
+		if (!fallback) {  // if fallback, the delete is handled by the window system, no need to manually delete it
+			glDeleteFramebuffers(1, ptr);
+		}
 		delete ptr;
 	});
 
-	if (!n_color_attachments && !_DepthAttachment.has_value()) {  // no attachments, fallback to default FBO
+	if (fallback) {
 		return res;
 	}
 
