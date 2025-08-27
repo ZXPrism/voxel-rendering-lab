@@ -1,5 +1,3 @@
-// ground-glass-v1
-
 #version 460 core
 
 in vec2 _TexCoords;
@@ -34,7 +32,7 @@ void main() {
     vec4 sum = vec4(0.0);
     for(int _ = 0; _ < SAMPLE_NUM; _++) {
         vec2 offset = sample_circle(seed) * pixel_size * SAMPLE_CIRCLE_RADIUS;
-        sum += texture(sampler, _TexCoords + offset);
+        sum += texture(sampler, _TexCoords);
     }
 
     _Color = sum / SAMPLE_NUM;

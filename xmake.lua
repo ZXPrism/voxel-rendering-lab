@@ -1,8 +1,9 @@
 set_project("voxel-rendering-lab")
 
 add_rules("mode.debug", "mode.release")
-add_requires("spdlog", "glm", "glad", "glfw", "stb")
-add_requires("imgui", {configs = { glfw = true, opengl3 = true }})
+
+add_repositories("my-xmake-repo https://github.com/ZXPrism/my-xmake-repo.git")
+add_requires("gfx-utils")
 
 target("voxel-rendering-lab")
     set_languages("cxx20")
@@ -11,7 +12,7 @@ target("voxel-rendering-lab")
 
     add_includedirs("src")
     add_files("src/**.cpp")
-    add_packages("spdlog", "glm", "glad", "glfw", "imgui","stb")
+    add_packages("gfx-utils")
 
     after_build(function (target)
         os.cp(target:targetfile(), "bin/")

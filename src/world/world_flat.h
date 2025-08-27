@@ -1,14 +1,15 @@
 #pragma once
 
-#include <interfaces/world.h>
-#include <vertex_buffer.h>
 #include <world/voxel.h>
+#include <world/world.h>
+
+#include <gfx-utils-core/vertex_buffer.h>
 
 namespace vrl {
 
 class WorldFlat : public IWorld<WorldFlat> {
 private:
-	VertexBuffer _VertexBuffer;
+	gfxutils::VertexBuffer _VertexBuffer;
 	std::vector<Voxel> _WorldData;
 
 public:
@@ -17,7 +18,7 @@ public:
 	Voxel &_get_voxel(size_t x, size_t y, size_t z);
 	const Voxel &_get_voxel(size_t x, size_t y, size_t z) const;
 
-	void _render(ShaderProgram &shader_program) const;
+	void _render(gfxutils::ShaderProgram &shader_program) const;
 };
 
 }  // namespace vrl

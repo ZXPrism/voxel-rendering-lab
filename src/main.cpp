@@ -1,25 +1,25 @@
-#include <app.h>
-#include <camera.h>
-#include <logger.h>
-#include <render_pass.h>
-#include <shader_program.h>
-#include <vertices.h>
 #include <world/world_flat.h>
+
+#include <gfx-utils-core/app.h>
+#include <gfx-utils-core/camera.h>
+#include <gfx-utils-core/logger.h>
+#include <gfx-utils-core/render_pass.h>
+#include <gfx-utils-core/shader_program.h>
+#include <gfx-utils-core/vertices.h>
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
-#include <ctime>
-
 int main() {
 	using namespace vrl;
+	using namespace gfxutils;
 
 	auto &app = App::instance();
 	app.init();
 	app.set_flag_vsync(false);
 	app.set_flag_depth_test(true);
-	app.set_clear_color({ 0.0f, 0.0f, 0.0f });
+	app.set_clear_color({ 0.341f, 0.808f, 0.980f });
 
 	// prepare camera
 	Camera camera;

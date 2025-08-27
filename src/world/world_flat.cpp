@@ -1,6 +1,6 @@
 #include <world/world_flat.h>
 
-#include <vertices.h>
+#include <gfx-utils-core/vertices.h>
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,7 +9,7 @@ namespace vrl {
 
 WorldFlat::WorldFlat(size_t extent_x, size_t extent_y, size_t extent_z)
     : IWorld(extent_x, extent_y, extent_z)
-    , _VertexBuffer(VertexBuffer::VertexBufferBuilder("vert builder", g_cube_vertices)
+    , _VertexBuffer(gfxutils::VertexBuffer::VertexBufferBuilder("vert builder", gfxutils::g_cube_vertices)
                         .add_attribute(3)  // pos
                         .add_attribute(3)  // normal
                         .add_attribute(2)  // uv
@@ -25,7 +25,7 @@ const Voxel &WorldFlat::_get_voxel(size_t x, size_t y, size_t z) const {
 	return _WorldData[x * _ExtentY * _ExtentZ + y * _ExtentZ + z];
 }
 
-void WorldFlat::_render(ShaderProgram &shader_program) const {
+void WorldFlat::_render(gfxutils::ShaderProgram &shader_program) const {
 	_VertexBuffer.use();
 
 	for (size_t x = 0; x < _ExtentX; x++) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <shader_program.h>
+#include <gfx-utils-core/shader_program.h>
 #include <world/voxel.h>
 
 #include <glm/gtc/noise.hpp>
@@ -44,7 +44,7 @@ public:
 		return static_cast<const Derived *>(this)->_get_voxel(x, y, z);
 	}
 
-	void render(ShaderProgram &shader_program) const {
+	void render(gfxutils::ShaderProgram &shader_program) const {
 		static_cast<const Derived *>(this)->_render(shader_program);
 	}
 
