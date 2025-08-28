@@ -11,14 +11,17 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
+constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_HEIGHT = 600;
+constexpr const char *WINDOW_TITLE = "voxel-rendering-lab";
+
 int main() {
 	using namespace vrl;
 	using namespace gfxutils;
 
 	auto &app = App::instance();
-	app.init();
+	app.init(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
 	app.set_flag_vsync(false);
-	app.set_flag_depth_test(true);
 	app.set_clear_color({ 0.341f, 0.808f, 0.980f });
 
 	// prepare camera
@@ -41,15 +44,15 @@ int main() {
 
 	// geometry pass
 	auto albedo = Texture::TextureBuilder("albedo")
-	                  .set_size(config::initial_window_width, config::initial_window_height)
+	                  .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
 	                  .set_format(GL_RGBA32F)
 	                  .build();
 	auto depth = Texture::TextureBuilder("depth")  // NOTE: internally use GL_NEAREST, that's actually ideal for depth -> they shouldn't be smoothed
-	                 .set_size(config::initial_window_width, config::initial_window_height)
+	                 .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
 	                 .set_format(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT)
 	                 .build();
 	auto geometry_pass = RenderPass::RenderPassBuilder("geometry_pass")
-	                         .add_color_attachment(albedo)
+	                         .add_color_attachment(albedo, true)
 	                         .set_depth_attachment(depth)
 	                         .build();
 
@@ -84,25 +87,19 @@ int main() {
 	app.run([&](float dt) {
 		camera.update(dt);
 
-		geometry_pass.use([&]() {
-			geometry_pass.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			app.set_flag_depth_test(true);
-
+		geometry_pass.use(true, [&]() {
 			geometry_pass_shader_program.use();
 			geometry_pass_shader_program.set_uniform("view", camera.get_view());
 			world_flat.render(geometry_pass_shader_program);
 		});
 
-		fx_pass.use([&]() {
-			fx_pass.clear(GL_COLOR_BUFFER_BIT);
-			app.set_flag_depth_test(false);
-
+		fx_pass.use(false, [&]() {
 			albedo.use(0);
 			quad_vertex_buffer.use();
 			fx_pass_shader_program.use();
 			fx_pass_shader_program.set_uniform("sampler", 0);
-			fx_pass_shader_program.set_uniform("window_width", config::initial_window_width);
-			fx_pass_shader_program.set_uniform("window_height", config::initial_window_height);
+			fx_pass_shader_program.set_uniform("window_width", WINDOW_WIDTH);
+			fx_pass_shader_program.set_uniform("window_height", WINDOW_HEIGHT);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		});
 	});
