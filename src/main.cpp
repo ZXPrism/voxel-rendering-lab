@@ -11,9 +11,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 
-constexpr int WINDOW_WIDTH = 800;
-constexpr int WINDOW_HEIGHT = 600;
-constexpr const char *WINDOW_TITLE = "voxel-rendering-lab";
+constexpr int WINDOW_WIDTH = 1920;
+constexpr int WINDOW_HEIGHT = 1080;
+constexpr const char *WINDOW_TITLE = "voxel-rendering-lab [powered by gfx-utils]";
 
 int main() {
 	using namespace vrl;
@@ -22,7 +22,6 @@ int main() {
 	auto &app = App::instance();
 	app.init(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
 	app.set_flag_vsync(false);
-	app.set_clear_color({ 0.341f, 0.808f, 0.980f });
 
 	// prepare camera
 	Camera camera;
@@ -31,10 +30,10 @@ int main() {
 	ShaderProgram::ShaderProgramBuilder geometry_pass_shader_program_builder("geometry_pass_shader_program");
 	{
 		Shader::ShaderBuilder vs_builder("geometry_pass_vs");
-		auto vertex_shader = vs_builder.set_type(ShaderType::VERTEX_SHADER).set_source_from_file("assets/geometry.vert").build();
+		auto vertex_shader = vs_builder.set_type(ShaderType::VERTEX_SHADER).set_source_from_file("assets/deferred/geometry.vert").build();
 
 		Shader::ShaderBuilder fs_builder("geometry_pass_fs");
-		auto fragment_shader = fs_builder.set_type(ShaderType::FRAGMENT_SHADER).set_source_from_file("assets/geometry.frag").build();
+		auto fragment_shader = fs_builder.set_type(ShaderType::FRAGMENT_SHADER).set_source_from_file("assets/deferred/geometry.frag").build();
 
 		geometry_pass_shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
 	}
@@ -45,61 +44,91 @@ int main() {
 	// geometry pass
 	auto albedo = Texture::TextureBuilder("albedo")
 	                  .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
-	                  .set_format(GL_RGBA32F)
+	                  .set_format(GL_RGB32F, GL_RGB)
 	                  .build();
-	auto depth = Texture::TextureBuilder("depth")  // NOTE: internally use GL_NEAREST, that's actually ideal for depth -> they shouldn't be smoothed
+	auto position = Texture::TextureBuilder("position")
+	                    .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
+	                    .set_format(GL_RGB32F, GL_RGB)
+	                    .build();
+	auto normal = Texture::TextureBuilder("normal")
+	                  .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
+	                  .set_format(GL_RGB32F, GL_RGB)
+	                  .build();
+	auto depth = Texture::TextureBuilder("depth")
 	                 .set_size(WINDOW_WIDTH, WINDOW_HEIGHT)
 	                 .set_format(GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT)
 	                 .build();
 	auto geometry_pass = RenderPass::RenderPassBuilder("geometry_pass")
 	                         .add_color_attachment(albedo, true)
+	                         .add_color_attachment(position, false)
+	                         .add_color_attachment(normal, true, glm::vec4(0.0f))
 	                         .set_depth_attachment(depth)
 	                         .build();
 
-	// fx pass
-	auto fx_pass = RenderPass::RenderPassBuilder("fx_pass").build();
-
-	ShaderProgram::ShaderProgramBuilder fx_pass_shader_program_builder("fx_pass_shader_program");
+	// lighting pass shader
+	ShaderProgram::ShaderProgramBuilder lighting_pass_shader_program_builder("lighting_pass_shader_program");
 	{
-		Shader::ShaderBuilder vs_builder("fx_vs");
+		Shader::ShaderBuilder vs_builder("lighting_vs");
 		auto vertex_shader = vs_builder
 		                         .set_type(ShaderType::VERTEX_SHADER)
-		                         .set_source_from_file("assets/fx.vert")
+		                         .set_source_from_file("assets/deferred/lighting.vert")
 		                         .build();
 
-		Shader::ShaderBuilder fs_builder("fx_fs");
+		Shader::ShaderBuilder fs_builder("lighting_fs");
 		auto fragment_shader = fs_builder
 		                           .set_type(ShaderType::FRAGMENT_SHADER)
-		                           .set_source_from_file("assets/fx.frag")
+		                           .set_source_from_file("assets/deferred/lighting.frag")
 		                           .build();
-		fx_pass_shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
+		lighting_pass_shader_program_builder.add_shader(vertex_shader).add_shader(fragment_shader);
 	}
-	auto fx_pass_shader_program = fx_pass_shader_program_builder.build();
+	auto lighting_pass_shader_program = lighting_pass_shader_program_builder.build();
+	lighting_pass_shader_program.use();
+	lighting_pass_shader_program.set_uniform("window_width", static_cast<int>(WINDOW_WIDTH));
+	lighting_pass_shader_program.set_uniform("window_height", static_cast<int>(WINDOW_HEIGHT));
+
+	// lighting pass
+	auto lighting_pass = RenderPass::RenderPassBuilder("lighting_pass").build();
 
 	auto quad_vertex_buffer = VertexBuffer::VertexBufferBuilder("fullscreen_quad", g_screen_quad_vertices)
 	                              .add_attribute(2)  // position (vec2)
 	                              .add_attribute(2)  // texture coordinates (vec2)
 	                              .build();
 
-	WorldFlat world_flat(10, 10, 10);
+	WorldFlat world_flat(50, 12, 50);
 	world_flat.init();
 
+	int display_mode = 0;
 	app.run([&](float dt) {
 		camera.update(dt);
+
+		ImGui::Begin("Control", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+		{
+			const char *items[] = { "final", "albedo", "position", "normal", "all" };
+			ImGui::Combo("Color", &display_mode, items, IM_ARRAYSIZE(items));
+		}
+		ImGui::End();
 
 		geometry_pass.use(true, [&]() {
 			geometry_pass_shader_program.use();
 			geometry_pass_shader_program.set_uniform("view", camera.get_view());
+
 			world_flat.render(geometry_pass_shader_program);
 		});
 
-		fx_pass.use(false, [&]() {
+		lighting_pass.use(false, [&]() {
 			albedo.use(0);
+			position.use(1);
+			normal.use(2);
+
+			lighting_pass_shader_program.use();
+			lighting_pass_shader_program.set_uniform("sampler_albedo", 0);
+			lighting_pass_shader_program.set_uniform("sampler_position", 1);
+			lighting_pass_shader_program.set_uniform("sampler_normal", 2);
+			lighting_pass_shader_program.set_uniform("light_position", camera.get_pos());
+			lighting_pass_shader_program.set_uniform("light_color", glm::normalize(glm::abs(camera.get_pos())));
+			lighting_pass_shader_program.set_uniform("u_display_mode", display_mode);
+
 			quad_vertex_buffer.use();
-			fx_pass_shader_program.use();
-			fx_pass_shader_program.set_uniform("sampler", 0);
-			fx_pass_shader_program.set_uniform("window_width", WINDOW_WIDTH);
-			fx_pass_shader_program.set_uniform("window_height", WINDOW_HEIGHT);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		});
 	});

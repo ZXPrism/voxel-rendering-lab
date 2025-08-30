@@ -5,6 +5,8 @@
 
 #include <glm/gtc/noise.hpp>
 
+#include <random>
+
 namespace vrl {
 
 template<typename Derived>
@@ -22,11 +24,16 @@ public:
 	}
 
 	void init() {
+		std::random_device rd;
+		std::mt19937_64 engine(rd());
+		std::normal_distribution<double> dist(0.5, 1);
+
 		for (size_t x = 0; x < _ExtentX; x++) {
-			for (size_t y = 0; y < _ExtentY; y++) {
-				for (size_t z = 0; z < _ExtentZ; z++) {
-					float noise = glm::perlin(glm::vec3(x, y, z) * 0.04f);
-					if (noise > 0.0f) {
+			for (size_t z = 0; z < _ExtentZ; z++) {
+				size_t height = static_cast<size_t>(dist(engine) * static_cast<double>(_ExtentY));
+				for (size_t y = 0; y < _ExtentY; y++) {
+					// float noise = glm::perlin(glm::vec3(x, y, z) * 0.04f);
+					if (y > height) {
 						get_voxel(x, y, z).type = -1;
 					} else {
 						get_voxel(x, y, z).type = 0;

@@ -32,8 +32,10 @@ void WorldFlat::_render(gfxutils::ShaderProgram &shader_program) const {
 		for (size_t y = 0; y < _ExtentY; y++) {
 			for (size_t z = 0; z < _ExtentZ; z++) {
 				glm::mat4 model(1.0f);
-				model = glm::translate(model, glm::vec3{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) });
+				// add a small offset so that the camera won't be in the wall initially
+				model = glm::translate(model, glm::vec3(1.0f) + glm::vec3{ static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) });
 				shader_program.set_uniform("model", model);
+				shader_program.set_uniform("model_normal", glm::transpose(glm::inverse(model)));
 
 				auto &voxel = _get_voxel(x, y, z);
 				shader_program.set_uniform("type", static_cast<int>(voxel.type));
