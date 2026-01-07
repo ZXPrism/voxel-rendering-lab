@@ -1,0 +1,13 @@
+.vs
+.vscode
+.VSCodeCounter
+.cache
+.xmake
+bin
+build
+out
+bits
+.cph
+dist
+sandbox.cpp
+scenes
