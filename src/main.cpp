@@ -9,6 +9,9 @@
 #include <logger.h>
 #include <shader.h>
 
+#define STB_PERLIN_IMPLEMENTATION
+#include <stb_perlin.h>
+
 #include <memory>
 
 constexpr int WINDOW_WIDTH = 1280;
@@ -112,10 +115,10 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 
 	SDL_GL_SetSwapInterval(0);  // no vsync
 
-	SPDLOG_INFO("OpenGL Version: {}\n", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
-	SPDLOG_INFO("GLSL Version: {}\n", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-	SPDLOG_INFO("Renderer:{}\n", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
-	SPDLOG_INFO("Vendor: {}\n", reinterpret_cast<const char *>(glGetString(GL_VENDOR)));
+	SPDLOG_INFO("OpenGL Version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+	SPDLOG_INFO("GLSL Version: {}", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+	SPDLOG_INFO("Renderer:{}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
+	SPDLOG_INFO("Vendor: {}", reinterpret_cast<const char *>(glGetString(GL_VENDOR)));
 
 	// render prep
 	// VAO
@@ -155,13 +158,13 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	state._shader = std::make_unique<vox::Shader>("shader/cube.vert", "shader/cube.frag");
 
 	glm::mat4 view = glm::lookAt(
-	    glm::vec3(2, 2, 2),
+	    glm::vec3(80, 80, 80),
 	    glm::vec3(0, 0, 0),
 	    glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(
-	    glm::radians(60.0f),
+	    glm::radians(90.0f),
 	    static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
-	    0.1f, 100.0f);
+	    0.1f, 1000.0f);
 	state._pv = proj * view;
 
 	return SDL_APP_CONTINUE;
@@ -180,13 +183,30 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 
 	auto &shader = state._shader;
 	shader->use_program();
-
-	glm::mat4 model{ 1.0f };
-
-	shader->set_uniform("uMVP", state._pv * model);
+	shader->set_uniform("uProjectionView", state._pv);
 
 	glBindVertexArray(state._VAO);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+	[[maybe_unused]] int total = 0;  // 163876
+	for (int x = -64; x < 64; x++) {
+		for (int z = -64; z < 64; z++) {
+			auto t = stb_perlin_fbm_noise3(
+			    static_cast<float>(x) * 0.1f, 0.0f, static_cast<float>(z) * 0.1f,
+			    2.0f,
+			    0.5f,
+			    5);
+			int height = static_cast<int>(t * 10.0f) + 10;
+			total += height;
+
+			for (int y = 0; y < height; y++) {
+
+				glm::mat4 model{ 1.0f };
+				model = glm::translate(model, glm::vec3{ x, y, z });
+				shader->set_uniform("uModel", model);
+				glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+			}
+		}
+	}
 
 	SDL_GL_SwapWindow(state._window);
 	return SDL_APP_CONTINUE;
