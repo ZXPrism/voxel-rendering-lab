@@ -17,7 +17,7 @@ const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
 const vec3 LIGHT_POS = vec3(1.0, 0.0, 0.0);
 
 void main() {
-    vec3 albedo = (vUv.x >= 0.05 && vUv.x <= 0.95 && vUv.y >= 0.05 && vUv.y <= 0.95) ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.0, 0.0);
+    vec3 albedo = vec3(1.0, 0.0, 0.0);
 
     // ambient
     vec3 ambient = LIGHT_COLOR * albedo;
