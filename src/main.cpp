@@ -18,6 +18,7 @@
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
 constexpr int WORLD_SIZE_LENGTH = 128;
+constexpr glm::vec3 CAMERA_POS{ 80.0f, 80.0f, 80.0f };
 
 struct Vertex {
 	glm::vec3 pos;
@@ -162,7 +163,7 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	state._shader = std::make_unique<vox::Shader>("shader/cube.vert", "shader/cube.frag");
 
 	glm::mat4 view = glm::lookAt(
-	    glm::vec3(80, 80, 80),
+	    CAMERA_POS,
 	    glm::vec3(0, 0, 0),
 	    glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(
@@ -236,6 +237,7 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 	auto &shader = state._shader;
 	shader->use_program();
 	shader->set_uniform("uProjectionView", state._pv);
+	shader->set_uniform("uCameraPos", CAMERA_POS);
 
 	glBindVertexArray(state._VAO);
 	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, state._voxel_cnt);
