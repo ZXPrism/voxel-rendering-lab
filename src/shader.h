@@ -14,6 +14,7 @@ public:
 	explicit Shader(const std::string &vs_path, const std::string &fs_path);
 
 	void use_program() const;
+	void set_uniform(const std::string &name, const glm::vec3 &vector);
 	void set_uniform(const std::string &name, const glm::mat4 &matrix);
 	void set_uniform(const std::string &name, int value);
 

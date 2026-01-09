@@ -81,6 +81,13 @@ void Shader::set_uniform(const std::string &name, int value) {
 	}
 }
 
+void Shader::set_uniform(const std::string &name, const glm::vec3 &vector) {
+	auto location = _get_uniform_location(name);
+	if (location != -1) {
+		glUniform3fv(location, 1, &vector[0]);
+	}
+}
+
 GLint Shader::_get_uniform_location(const std::string &name) {
 	GLint location = -1;
 

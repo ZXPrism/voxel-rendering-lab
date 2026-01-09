@@ -13,9 +13,11 @@
 #include <stb_perlin.h>
 
 #include <memory>
+#include <vector>
 
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
+constexpr int WORLD_SIZE_LENGTH = 128;
 
 struct Vertex {
 	glm::vec3 pos;
@@ -30,8 +32,12 @@ struct {
 	std::unique_ptr<vox::Shader> _shader;
 	GLuint _VAO;
 	GLuint _VBO;
+	GLuint _instance_VBO;
 	GLuint _EBO;
 	glm::mat4 _pv;
+
+	int _voxel_cnt = 0;
+	std::vector<std::vector<int>> _world_data;  // [x][z] = height
 } state;
 
 static const Vertex cube_vertices[] = {
@@ -108,9 +114,7 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		return SDL_APP_FAILURE;
 	}
 
-	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	SDL_GL_SetSwapInterval(0);  // no vsync
@@ -143,6 +147,10 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	glVertexArrayVertexBuffer(state._VAO, 0, state._VBO, 0, sizeof(Vertex));
 	glVertexArrayElementBuffer(state._VAO, state._EBO);
 
+	glVertexArrayAttribBinding(state._VAO, 0, 0);
+	glVertexArrayAttribBinding(state._VAO, 1, 0);
+	glVertexArrayAttribBinding(state._VAO, 2, 0);
+
 	glEnableVertexArrayAttrib(state._VAO, 0);  // pos
 	glEnableVertexArrayAttrib(state._VAO, 1);  // normal
 	glEnableVertexArrayAttrib(state._VAO, 2);  // uv
@@ -150,10 +158,6 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	glVertexArrayAttribFormat(state._VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
 	glVertexArrayAttribFormat(state._VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
 	glVertexArrayAttribFormat(state._VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-
-	glVertexArrayAttribBinding(state._VAO, 0, 0);
-	glVertexArrayAttribBinding(state._VAO, 1, 0);
-	glVertexArrayAttribBinding(state._VAO, 2, 0);
 
 	state._shader = std::make_unique<vox::Shader>("shader/cube.vert", "shader/cube.frag");
 
@@ -166,6 +170,54 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	    static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
 	    0.1f, 1000.0f);
 	state._pv = proj * view;
+
+	// world prep
+	state._world_data = std::vector<std::vector<int>>(WORLD_SIZE_LENGTH, std::vector<int>(WORLD_SIZE_LENGTH));
+	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
+		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
+			int x_shifted = x - (WORLD_SIZE_LENGTH / 2);
+			int z_shifted = z - (WORLD_SIZE_LENGTH / 2);
+			auto t = stb_perlin_fbm_noise3(
+			    static_cast<float>(x_shifted) * 0.1f, 0.0f, static_cast<float>(z_shifted) * 0.1f,
+			    2.0f,
+			    0.5f,
+			    5);
+			int height = static_cast<int>(t * 10.0f) + 10;
+			state._world_data[x][z] = height;
+
+			state._voxel_cnt += height;
+		}
+	}
+
+	// instancing VBO
+	const int voxel_cnt = WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH;
+	std::vector<glm::vec3> translations;
+	translations.reserve(voxel_cnt);
+
+	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
+		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
+			int x_shifted = x - (WORLD_SIZE_LENGTH / 2);
+			int z_shifted = z - (WORLD_SIZE_LENGTH / 2);
+			int height = state._world_data[x][z];
+			for (int y = 0; y < height; y++) {
+				translations.emplace_back(
+				    static_cast<float>(x_shifted),
+				    static_cast<float>(y),
+				    static_cast<float>(z_shifted));
+			}
+		}
+	}
+
+	glCreateBuffers(1, &state._instance_VBO);
+	glNamedBufferStorage(state._instance_VBO, translations.size() * sizeof(glm::vec3),
+	                     translations.data(), GL_DYNAMIC_STORAGE_BIT);
+
+	// register attribute
+	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_VBO, 0, sizeof(glm::vec3));
+	glVertexArrayAttribBinding(state._VAO, 3, 1);
+	glVertexArrayAttribFormat(state._VAO, 3, 3, GL_FLOAT, GL_FALSE, 0);
+	glEnableVertexArrayAttrib(state._VAO, 3);
+	glVertexArrayBindingDivisor(state._VAO, 1, 1);
 
 	return SDL_APP_CONTINUE;
 }
@@ -186,32 +238,17 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 	shader->set_uniform("uProjectionView", state._pv);
 
 	glBindVertexArray(state._VAO);
-
-	[[maybe_unused]] int total = 0;  // 163876
-	for (int x = -64; x < 64; x++) {
-		for (int z = -64; z < 64; z++) {
-			auto t = stb_perlin_fbm_noise3(
-			    static_cast<float>(x) * 0.1f, 0.0f, static_cast<float>(z) * 0.1f,
-			    2.0f,
-			    0.5f,
-			    5);
-			int height = static_cast<int>(t * 10.0f) + 10;
-			total += height;
-
-			for (int y = 0; y < height; y++) {
-
-				glm::mat4 model{ 1.0f };
-				model = glm::translate(model, glm::vec3{ x, y, z });
-				shader->set_uniform("uModel", model);
-				glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-			}
-		}
-	}
+	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, state._voxel_cnt);
 
 	SDL_GL_SwapWindow(state._window);
 	return SDL_APP_CONTINUE;
 }
 
 void SDL_AppQuit([[maybe_unused]] void *appstate, [[maybe_unused]] SDL_AppResult result) {
+	glDeleteBuffers(1, &state._VBO);
+	glDeleteBuffers(1, &state._instance_VBO);
+	glDeleteBuffers(1, &state._EBO);
+	glDeleteVertexArrays(1, &state._VAO);
+
 	SDL_GL_DestroyContext(state._context);
 }
