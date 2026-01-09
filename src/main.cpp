@@ -18,7 +18,7 @@
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
 constexpr int WORLD_SIZE_LENGTH = 128;
-constexpr glm::vec3 CAMERA_POS{ 80.0f, 80.0f, 80.0f };
+constexpr glm::vec3 CAMERA_POS{ 0.1f, 90.0f, 0.0f };
 
 struct Vertex {
 	glm::vec3 pos;

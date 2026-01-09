@@ -14,7 +14,7 @@ const float SPECULAR_COEFF = 0.2;
 const int SHININESS = 64;
 
 const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
-const vec3 LIGHT_POS = vec3(1.0, 0.0, 0.0);
+const vec3 LIGHT_POS = vec3(0.0, 20.0, 0.0);
 
 void main() {
     vec3 albedo = vec3(1.0, 0.0, 0.0);
