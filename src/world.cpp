@@ -49,8 +49,49 @@ static const uint32_t cube_indices[] = {
 	20, 21, 22, 22, 23, 20
 };
 
-void World::generate() {
-	// render prep
+[[nodiscard]] Block World::get_block(int x, int y, int z) const {
+	return _world_data[(x * WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH) + (y * WORLD_SIZE_LENGTH) + z];
+}
+
+[[nodiscard]] Block &World::get_block(int x, int y, int z) {
+	return _world_data[(x * WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH) + (y * WORLD_SIZE_LENGTH) + z];
+}
+
+void World::_prep_storage() {
+	// set up world data buffer
+	_world_data.resize(WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH);
+
+	// world prep
+	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
+		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
+			auto t = stb_perlin_fbm_noise3(
+			    static_cast<float>(x) * 0.1f, 0.0f, static_cast<float>(z) * 0.1f,
+			    2.0f,
+			    0.5f,
+			    5);
+			int height = static_cast<int>(t * 10.0f) + 10;
+
+			for (int y = 0; y < height; y++) {
+				auto &block = get_block(x, y, z);
+				if (y <= 4) {
+					block._type = BlockType::STONE;
+				} else if (y <= 10) {
+					block._type = BlockType::DIRT;
+				} else {
+					block._type = BlockType::GRASS;
+				}
+			}
+			for (int y = height; y < WORLD_SIZE_LENGTH; y++) {
+				auto &block = get_block(x, y, z);
+				block._type = BlockType::AIR;
+			}
+
+			_voxel_cnt += height;
+		}
+	}
+}
+
+void World::_prep_render() {
 	// VAO
 	_vertex_array = std::make_unique<vox::VertexArray>();
 
@@ -79,50 +120,30 @@ void World::generate() {
 	glVertexArrayAttribFormat(_vertex_array->_handle, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
 	glVertexArrayAttribFormat(_vertex_array->_handle, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 
-	// world prep
-	_world_data = std::vector<std::vector<int>>(WORLD_SIZE_LENGTH, std::vector<int>(WORLD_SIZE_LENGTH));
-	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
-		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
-			int x_shifted = x - (WORLD_SIZE_LENGTH / 2);
-			int z_shifted = z - (WORLD_SIZE_LENGTH / 2);
-			auto t = stb_perlin_fbm_noise3(
-			    static_cast<float>(x_shifted) * 0.1f, 0.0f, static_cast<float>(z_shifted) * 0.1f,
-			    2.0f,
-			    0.5f,
-			    5);
-			int height = static_cast<int>(t * 10.0f) + 10;
-			_world_data[x][z] = height;
-
-			_voxel_cnt += height;
-		}
-	}
-
 	// instancing VBO
-	const int voxel_cnt = WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH;
 	std::vector<Instance> instance_data;
-	instance_data.reserve(voxel_cnt);
 
 	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
 		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
-			int x_shifted = x - (WORLD_SIZE_LENGTH / 2);
-			int z_shifted = z - (WORLD_SIZE_LENGTH / 2);
-			int height = _world_data[x][z];
-			for (int y = 0; y < height; y++) {
+			for (int y = 0; y < WORLD_SIZE_LENGTH; y++) {
+				auto &block = get_block(x, y, z);
+
 				int texture = 0;
-				if (y <= 4) {
-					texture = 2;
-				} else if (y <= 10) {
-					texture = 1;
-				} else {
-					texture = 0;
+				switch (block._type) {
+				case BlockType::GRASS: texture = 0; break;
+				case BlockType::DIRT: texture = 1; break;
+				case BlockType::STONE: texture = 2; break;
+				default: break;
 				}
 
-				instance_data.emplace_back(
-				    glm::vec3{
-				        static_cast<float>(x_shifted),
-				        static_cast<float>(y),
-				        static_cast<float>(z_shifted) },
-				    texture);
+				if (block._type != BlockType::AIR) {
+					instance_data.emplace_back(
+					    glm::vec3{
+					        static_cast<float>(x - (WORLD_SIZE_LENGTH / 2)),
+					        static_cast<float>(y),
+					        static_cast<float>(z - (WORLD_SIZE_LENGTH / 2)) },
+					    texture);
+				}
 			}
 		}
 	}
@@ -142,6 +163,11 @@ void World::generate() {
 	glVertexArrayAttribBinding(_vertex_array->_handle, 4, 1);
 	glVertexArrayAttribIFormat(_vertex_array->_handle, 4, 1, GL_INT, offsetof(Instance, texture));
 	glEnableVertexArrayAttrib(_vertex_array->_handle, 4);
+}
+
+void World::generate() {
+	_prep_storage();
+	_prep_render();
 }
 
 void World::render() {
