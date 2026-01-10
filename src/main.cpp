@@ -101,8 +101,6 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		return SDL_APP_FAILURE;
 	}
 
-	SPDLOG_INFO("successfully initialized SDL3!");
-
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -126,8 +124,6 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		SDL_DestroyWindow(state._window);
 		return SDL_APP_FAILURE;
 	}
-
-	SPDLOG_INFO("successfully initialized GLAD!");
 
 	glEnable(GL_DEPTH_TEST);
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
