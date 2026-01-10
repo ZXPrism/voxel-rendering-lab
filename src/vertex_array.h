@@ -11,6 +11,8 @@ public:
 	VertexArray();
 	~VertexArray();
 
+	void use() const;
+
 	GLuint _handle;
 
 private:

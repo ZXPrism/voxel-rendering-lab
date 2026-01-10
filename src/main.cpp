@@ -271,7 +271,7 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 	shader->set_uniform("uBlockTextureDirt", 1);
 	shader->set_uniform("uBlockTextureStone", 2);
 
-	glBindVertexArray(state._vertex_array->_handle);
+	state._vertex_array->use();
 	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, state._voxel_cnt);
 
 	SDL_GL_SwapWindow(state._window);
