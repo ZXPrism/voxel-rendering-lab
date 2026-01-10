@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <array_buffer.h>
 #include <logger.h>
 #include <shader.h>
 #include <texture.h>
@@ -38,9 +39,9 @@ struct {
 
 	std::unique_ptr<vox::Shader> _shader;
 	GLuint _VAO;
-	GLuint _VBO;
-	GLuint _instance_VBO;
-	GLuint _EBO;
+	std::unique_ptr<vox::ArrayBuffer> _voxel_data;
+	std::unique_ptr<vox::ArrayBuffer> _voxel_index_data;
+	std::unique_ptr<vox::ArrayBuffer> _instance_data;
 	glm::mat4 _pv;
 
 	int _voxel_cnt = 0;
@@ -140,23 +141,17 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	glCreateVertexArrays(1, &state._VAO);
 
 	// VBO
-	glCreateBuffers(1, &state._VBO);
-	glNamedBufferStorage(
-	    state._VBO,
-	    sizeof(cube_vertices),
-	    cube_vertices,
-	    0);
+	state._voxel_data = std::make_unique<vox::ArrayBuffer>(
+	    reinterpret_cast<const uint8_t *>(cube_vertices),
+	    static_cast<int>(sizeof(cube_vertices)));
 
 	// EBO
-	glCreateBuffers(1, &state._EBO);
-	glNamedBufferStorage(
-	    state._EBO,
-	    sizeof(cube_indices),
-	    cube_indices,
-	    0);
+	state._voxel_index_data = std::make_unique<vox::ArrayBuffer>(
+	    reinterpret_cast<const uint8_t *>(cube_indices),
+	    static_cast<int>(sizeof(cube_indices)));
 
-	glVertexArrayVertexBuffer(state._VAO, 0, state._VBO, 0, sizeof(Vertex));
-	glVertexArrayElementBuffer(state._VAO, state._EBO);
+	glVertexArrayVertexBuffer(state._VAO, 0, state._voxel_data->_handle, 0, sizeof(Vertex));
+	glVertexArrayElementBuffer(state._VAO, state._voxel_index_data->_handle);
 
 	glVertexArrayAttribBinding(state._VAO, 0, 0);
 	glVertexArrayAttribBinding(state._VAO, 1, 0);
@@ -237,12 +232,12 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		}
 	}
 
-	glCreateBuffers(1, &state._instance_VBO);
-	glNamedBufferStorage(state._instance_VBO, instance_data.size() * sizeof(Instance),
-	                     instance_data.data(), GL_DYNAMIC_STORAGE_BIT);
+	state._instance_data = std::make_unique<vox::ArrayBuffer>(
+	    reinterpret_cast<const uint8_t *>(instance_data.data()),
+	    static_cast<int>(instance_data.size() * sizeof(Instance)));
 
 	// register attribute
-	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_VBO, 0, sizeof(Instance));
+	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_data->_handle, 0, sizeof(Instance));
 	glVertexArrayBindingDivisor(state._VAO, 1, 1);
 
 	glVertexArrayAttribBinding(state._VAO, 3, 1);
@@ -283,9 +278,6 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 }
 
 void SDL_AppQuit([[maybe_unused]] void *appstate, [[maybe_unused]] SDL_AppResult result) {
-	glDeleteBuffers(1, &state._VBO);
-	glDeleteBuffers(1, &state._instance_VBO);
-	glDeleteBuffers(1, &state._EBO);
 	glDeleteVertexArrays(1, &state._VAO);
 
 	SDL_GL_DestroyContext(state._context);
