@@ -29,9 +29,10 @@ Texture::Texture(const std::string &path) {
 	glTextureParameteri(_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureStorage2D(_texture, 1, GL_RGBA8, tex_width, tex_height);
 
+	glTextureStorage2D(_texture, 1, GL_RGBA8, tex_width, tex_height);
 	glTextureSubImage2D(_texture, 0, 0, 0, tex_width, tex_height, GL_RGBA, GL_UNSIGNED_BYTE, tex_src);
+
 	stbi_image_free(tex_src);
 }
 

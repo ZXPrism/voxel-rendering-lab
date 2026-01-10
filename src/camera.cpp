@@ -16,4 +16,12 @@ glm::mat4 Camera::get_vp_matrix() const {
 	return _projection * _view;
 }
 
+glm::mat4 Camera::get_view_matrix() const {
+	return _view;
+}
+
+glm::mat4 Camera::get_projection_matrix() const {
+	return _projection;
+}
+
 }  // namespace vox

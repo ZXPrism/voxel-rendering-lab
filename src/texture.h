@@ -8,12 +8,13 @@ namespace vox {
 
 class Texture {
 public:
+	Texture() = default;
 	explicit Texture(const std::string &path);
-	~Texture();
+	virtual ~Texture();
 
 	void bind_texture(GLuint bind_point) const;
 
-private:
+protected:
 	GLuint _texture;
 };
 

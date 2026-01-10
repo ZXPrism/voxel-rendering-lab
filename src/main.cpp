@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array_buffer.h>
+#include <cube_texture.h>
 #include <logger.h>
 #include <orbit_camera.h>
 #include <shader.h>
@@ -28,9 +29,11 @@ struct {
 	SDL_GLContextState *_context;
 
 	std::unique_ptr<vox::Shader> _shader;
+	std::unique_ptr<vox::Shader> _skybox_shader;
 
 	vox::OrbitCamera _camera;
 
+	std::unique_ptr<vox::CubeTexture> _skybox;
 	std::unique_ptr<vox::Texture> _grass_block;
 	std::unique_ptr<vox::Texture> _dirt_block;
 	std::unique_ptr<vox::Texture> _stone_block;
@@ -77,13 +80,12 @@ struct {
 
 	void prep() {
 		_shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
+		_skybox_shader = std::make_unique<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
+
+		_skybox = std::make_unique<vox::CubeTexture>("assets/texture/skybox");
 		_grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
 		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
 		_stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");
-
-		_grass_block->bind_texture(0);
-		_dirt_block->bind_texture(1);
-		_stone_block->bind_texture(2);
 
 		_camera.look_at(CAMERA_POS, glm::vec3(0, 0, 0));
 		_camera.set_perspective(
@@ -95,6 +97,10 @@ struct {
 	}
 
 	void update() {
+		// logic
+		_camera.process_input(_delta_time);
+
+		// render
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		auto &shader = _shader;
@@ -105,8 +111,19 @@ struct {
 		shader->set_uniform("uBlockTextureDirt", 1);
 		shader->set_uniform("uBlockTextureStone", 2);
 
+		_grass_block->bind_texture(0);
+		_dirt_block->bind_texture(1);
+		_stone_block->bind_texture(2);
+
 		_world.render();
-		_camera.process_input(_delta_time);
+
+		_skybox_shader->use_program();
+		_skybox_shader->set_uniform("uSkyboxTexture", 0);
+		_skybox_shader->set_uniform("uProjection", _camera.get_projection_matrix());
+		_skybox_shader->set_uniform("uView", _camera.get_view_matrix());
+		_skybox->bind_texture(0);
+		glDepthFunc(GL_LEQUAL);
+		glDepthFunc(GL_LESS);
 
 		SDL_GL_SwapWindow(_window);
 	}
