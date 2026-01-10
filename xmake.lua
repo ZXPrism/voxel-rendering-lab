@@ -22,6 +22,7 @@ target("vox")
 
     after_build(function (target)
         os.cp(target:targetfile(), "bin/")
-        os.cp("src/shader", "bin/")
+        os.cp("assets", "bin/")
+        os.cp("src/shader", "bin/assets")
     end)
 target_end()

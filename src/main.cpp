@@ -8,6 +8,7 @@
 
 #include <logger.h>
 #include <shader.h>
+#include <texture.h>
 
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
@@ -18,12 +19,17 @@
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
 constexpr int WORLD_SIZE_LENGTH = 128;
-constexpr glm::vec3 CAMERA_POS{ 0.1f, 90.0f, 0.0f };
+constexpr glm::vec3 CAMERA_POS{ 0.01f, 80.0f, 0.0f };
 
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 uv;
+};
+
+struct Instance {
+	glm::vec3 translation;
+	int texture;
 };
 
 struct {
@@ -39,6 +45,10 @@ struct {
 
 	int _voxel_cnt = 0;
 	std::vector<std::vector<int>> _world_data;  // [x][z] = height
+
+	std::unique_ptr<vox::Texture> _grass_block;
+	std::unique_ptr<vox::Texture> _dirt_block;
+	std::unique_ptr<vox::Texture> _stone_block;
 } state;
 
 static const Vertex cube_vertices[] = {
@@ -91,6 +101,8 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		return SDL_APP_FAILURE;
 	}
 
+	SPDLOG_INFO("successfully initialized SDL3!");
+
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -115,6 +127,8 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 		return SDL_APP_FAILURE;
 	}
 
+	SPDLOG_INFO("successfully initialized GLAD!");
+
 	glEnable(GL_DEPTH_TEST);
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -122,7 +136,7 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 
 	SPDLOG_INFO("OpenGL Version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 	SPDLOG_INFO("GLSL Version: {}", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-	SPDLOG_INFO("Renderer:{}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
+	SPDLOG_INFO("Renderer: {}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
 	SPDLOG_INFO("Vendor: {}", reinterpret_cast<const char *>(glGetString(GL_VENDOR)));
 
 	// render prep
@@ -160,7 +174,14 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	glVertexArrayAttribFormat(state._VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
 	glVertexArrayAttribFormat(state._VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 
-	state._shader = std::make_unique<vox::Shader>("shader/cube.vert", "shader/cube.frag");
+	state._shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
+	state._grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
+	state._dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
+	state._stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");
+
+	state._grass_block->bind_texture(0);
+	state._dirt_block->bind_texture(1);
+	state._stone_block->bind_texture(2);
 
 	glm::mat4 view = glm::lookAt(
 	    CAMERA_POS,
@@ -192,8 +213,8 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 
 	// instancing VBO
 	const int voxel_cnt = WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH;
-	std::vector<glm::vec3> translations;
-	translations.reserve(voxel_cnt);
+	std::vector<Instance> instance_data;
+	instance_data.reserve(voxel_cnt);
 
 	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
 		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
@@ -201,24 +222,40 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 			int z_shifted = z - (WORLD_SIZE_LENGTH / 2);
 			int height = state._world_data[x][z];
 			for (int y = 0; y < height; y++) {
-				translations.emplace_back(
-				    static_cast<float>(x_shifted),
-				    static_cast<float>(y),
-				    static_cast<float>(z_shifted));
+				int texture = 0;
+				if (y <= 4) {
+					texture = 2;
+				} else if (y <= 10) {
+					texture = 1;
+				} else {
+					texture = 0;
+				}
+
+				instance_data.emplace_back(
+				    glm::vec3{
+				        static_cast<float>(x_shifted),
+				        static_cast<float>(y),
+				        static_cast<float>(z_shifted) },
+				    texture);
 			}
 		}
 	}
 
 	glCreateBuffers(1, &state._instance_VBO);
-	glNamedBufferStorage(state._instance_VBO, translations.size() * sizeof(glm::vec3),
-	                     translations.data(), GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(state._instance_VBO, instance_data.size() * sizeof(Instance),
+	                     instance_data.data(), GL_DYNAMIC_STORAGE_BIT);
 
 	// register attribute
-	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_VBO, 0, sizeof(glm::vec3));
-	glVertexArrayAttribBinding(state._VAO, 3, 1);
-	glVertexArrayAttribFormat(state._VAO, 3, 3, GL_FLOAT, GL_FALSE, 0);
-	glEnableVertexArrayAttrib(state._VAO, 3);
+	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_VBO, 0, sizeof(Instance));
 	glVertexArrayBindingDivisor(state._VAO, 1, 1);
+
+	glVertexArrayAttribBinding(state._VAO, 3, 1);
+	glVertexArrayAttribFormat(state._VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Instance, translation));
+	glEnableVertexArrayAttrib(state._VAO, 3);
+
+	glVertexArrayAttribBinding(state._VAO, 4, 1);
+	glVertexArrayAttribIFormat(state._VAO, 4, 1, GL_INT, offsetof(Instance, texture));
+	glEnableVertexArrayAttrib(state._VAO, 4);
 
 	return SDL_APP_CONTINUE;
 }
@@ -238,6 +275,9 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 	shader->use_program();
 	shader->set_uniform("uProjectionView", state._pv);
 	shader->set_uniform("uCameraPos", CAMERA_POS);
+	shader->set_uniform("uBlockTextureGrass", 0);
+	shader->set_uniform("uBlockTextureDirt", 1);
+	shader->set_uniform("uBlockTextureStone", 2);
 
 	glBindVertexArray(state._VAO);
 	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, state._voxel_cnt);
