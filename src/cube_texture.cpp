@@ -9,7 +9,7 @@
 namespace vox {
 
 CubeTexture::CubeTexture(const std::string &cubemap_path) {
-	const std::string filename_list[6]{ "nx.png", "ny.png", "nz.png", "px.png", "py.png", "pz.png" };
+	const std::string filename_list[6]{ "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png" };
 
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_texture);
 	glTextureStorage2D(_texture, 1, GL_RGBA8, 1024, 1024);  // HACK, hard code size for now

@@ -22,6 +22,10 @@ constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
 constexpr glm::vec3 CAMERA_POS{ 0.01f, 80.0f, 0.0f };
 
+// HACK: skybox test
+unsigned skyboxVAO;
+unsigned skyboxVBO;
+
 struct {
 	float _delta_time = 0.0f;
 
@@ -75,6 +79,60 @@ struct {
 
 		SDL_GL_SetSwapInterval(0);  // no vsync
 
+		// HACK: skybox test
+		float skyboxVertices[] = {
+			// positions
+			-1.0f, 1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f, 1.0f, -1.0f,
+			-1.0f, 1.0f, -1.0f,
+
+			-1.0f, -1.0f, 1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, 1.0f, -1.0f,
+			-1.0f, 1.0f, -1.0f,
+			-1.0f, 1.0f, 1.0f,
+			-1.0f, -1.0f, 1.0f,
+
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+
+			-1.0f, -1.0f, 1.0f,
+			-1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+			1.0f, -1.0f, 1.0f,
+			-1.0f, -1.0f, 1.0f,
+
+			-1.0f, 1.0f, -1.0f,
+			1.0f, 1.0f, -1.0f,
+			1.0f, 1.0f, 1.0f,
+			1.0f, 1.0f, 1.0f,
+			-1.0f, 1.0f, 1.0f,
+			-1.0f, 1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f, 1.0f,
+			1.0f, -1.0f, -1.0f,
+			1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f, 1.0f,
+			1.0f, -1.0f, 1.0f
+		};
+		// skybox VAO
+		glGenVertexArrays(1, &skyboxVAO);
+		glGenBuffers(1, &skyboxVBO);
+		glBindVertexArray(skyboxVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+
 		return true;
 	}
 
@@ -120,9 +178,11 @@ struct {
 		_skybox_shader->use_program();
 		_skybox_shader->set_uniform("uSkyboxTexture", 0);
 		_skybox_shader->set_uniform("uProjection", _camera.get_projection_matrix());
-		_skybox_shader->set_uniform("uView", _camera.get_view_matrix());
+		_skybox_shader->set_uniform("uView", glm::mat4(glm::mat3(_camera.get_view_matrix())));
 		_skybox->bind_texture(0);
 		glDepthFunc(GL_LEQUAL);
+		glBindVertexArray(skyboxVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
 
 		SDL_GL_SwapWindow(_window);
