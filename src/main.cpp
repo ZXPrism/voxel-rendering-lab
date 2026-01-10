@@ -8,6 +8,7 @@
 
 #include <array_buffer.h>
 #include <logger.h>
+#include <orbit_camera.h>
 #include <shader.h>
 #include <texture.h>
 #include <vertex_array.h>
@@ -26,7 +27,7 @@ struct {
 
 	std::unique_ptr<vox::Shader> _shader;
 
-	glm::mat4 _pv;
+	vox::OrbitCamera _camera;
 
 	std::unique_ptr<vox::Texture> _grass_block;
 	std::unique_ptr<vox::Texture> _dirt_block;
@@ -82,15 +83,11 @@ struct {
 		_dirt_block->bind_texture(1);
 		_stone_block->bind_texture(2);
 
-		glm::mat4 view = glm::lookAt(
-		    CAMERA_POS,
-		    glm::vec3(0, 0, 0),
-		    glm::vec3(0, 1, 0));
-		glm::mat4 proj = glm::perspective(
+		_camera.look_at(CAMERA_POS, glm::vec3(0, 0, 0));
+		_camera.set_perspective(
 		    glm::radians(90.0f),
 		    static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
 		    0.1f, 1000.0f);
-		_pv = proj * view;
 
 		_world.generate();
 	}
@@ -100,7 +97,7 @@ struct {
 
 		auto &shader = _shader;
 		shader->use_program();
-		shader->set_uniform("uProjectionView", _pv);
+		shader->set_uniform("uProjectionView", _camera.get_vp_matrix());
 		shader->set_uniform("uCameraPos", CAMERA_POS);
 		shader->set_uniform("uBlockTextureGrass", 0);
 		shader->set_uniform("uBlockTextureDirt", 1);
