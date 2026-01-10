@@ -10,6 +10,7 @@
 #include <logger.h>
 #include <shader.h>
 #include <texture.h>
+#include <vertex_array.h>
 
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
@@ -38,7 +39,7 @@ struct {
 	SDL_GLContextState *_context;
 
 	std::unique_ptr<vox::Shader> _shader;
-	GLuint _VAO;
+	std::unique_ptr<vox::VertexArray> _vertex_array;
 	std::unique_ptr<vox::ArrayBuffer> _voxel_data;
 	std::unique_ptr<vox::ArrayBuffer> _voxel_index_data;
 	std::unique_ptr<vox::ArrayBuffer> _instance_data;
@@ -138,7 +139,7 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 
 	// render prep
 	// VAO
-	glCreateVertexArrays(1, &state._VAO);
+	state._vertex_array = std::make_unique<vox::VertexArray>();
 
 	// VBO
 	state._voxel_data = std::make_unique<vox::ArrayBuffer>(
@@ -150,20 +151,20 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	    reinterpret_cast<const uint8_t *>(cube_indices),
 	    static_cast<int>(sizeof(cube_indices)));
 
-	glVertexArrayVertexBuffer(state._VAO, 0, state._voxel_data->_handle, 0, sizeof(Vertex));
-	glVertexArrayElementBuffer(state._VAO, state._voxel_index_data->_handle);
+	glVertexArrayVertexBuffer(state._vertex_array->_handle, 0, state._voxel_data->_handle, 0, sizeof(Vertex));
+	glVertexArrayElementBuffer(state._vertex_array->_handle, state._voxel_index_data->_handle);
 
-	glVertexArrayAttribBinding(state._VAO, 0, 0);
-	glVertexArrayAttribBinding(state._VAO, 1, 0);
-	glVertexArrayAttribBinding(state._VAO, 2, 0);
+	glVertexArrayAttribBinding(state._vertex_array->_handle, 0, 0);
+	glVertexArrayAttribBinding(state._vertex_array->_handle, 1, 0);
+	glVertexArrayAttribBinding(state._vertex_array->_handle, 2, 0);
 
-	glEnableVertexArrayAttrib(state._VAO, 0);  // pos
-	glEnableVertexArrayAttrib(state._VAO, 1);  // normal
-	glEnableVertexArrayAttrib(state._VAO, 2);  // uv
+	glEnableVertexArrayAttrib(state._vertex_array->_handle, 0);  // pos
+	glEnableVertexArrayAttrib(state._vertex_array->_handle, 1);  // normal
+	glEnableVertexArrayAttrib(state._vertex_array->_handle, 2);  // uv
 
-	glVertexArrayAttribFormat(state._VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
-	glVertexArrayAttribFormat(state._VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	glVertexArrayAttribFormat(state._VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	glVertexArrayAttribFormat(state._vertex_array->_handle, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribFormat(state._vertex_array->_handle, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	glVertexArrayAttribFormat(state._vertex_array->_handle, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 
 	state._shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
 	state._grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
@@ -237,16 +238,16 @@ SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int
 	    static_cast<int>(instance_data.size() * sizeof(Instance)));
 
 	// register attribute
-	glVertexArrayVertexBuffer(state._VAO, 1, state._instance_data->_handle, 0, sizeof(Instance));
-	glVertexArrayBindingDivisor(state._VAO, 1, 1);
+	glVertexArrayVertexBuffer(state._vertex_array->_handle, 1, state._instance_data->_handle, 0, sizeof(Instance));
+	glVertexArrayBindingDivisor(state._vertex_array->_handle, 1, 1);
 
-	glVertexArrayAttribBinding(state._VAO, 3, 1);
-	glVertexArrayAttribFormat(state._VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Instance, translation));
-	glEnableVertexArrayAttrib(state._VAO, 3);
+	glVertexArrayAttribBinding(state._vertex_array->_handle, 3, 1);
+	glVertexArrayAttribFormat(state._vertex_array->_handle, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Instance, translation));
+	glEnableVertexArrayAttrib(state._vertex_array->_handle, 3);
 
-	glVertexArrayAttribBinding(state._VAO, 4, 1);
-	glVertexArrayAttribIFormat(state._VAO, 4, 1, GL_INT, offsetof(Instance, texture));
-	glEnableVertexArrayAttrib(state._VAO, 4);
+	glVertexArrayAttribBinding(state._vertex_array->_handle, 4, 1);
+	glVertexArrayAttribIFormat(state._vertex_array->_handle, 4, 1, GL_INT, offsetof(Instance, texture));
+	glEnableVertexArrayAttrib(state._vertex_array->_handle, 4);
 
 	return SDL_APP_CONTINUE;
 }
@@ -270,7 +271,7 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 	shader->set_uniform("uBlockTextureDirt", 1);
 	shader->set_uniform("uBlockTextureStone", 2);
 
-	glBindVertexArray(state._VAO);
+	glBindVertexArray(state._vertex_array->_handle);
 	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, state._voxel_cnt);
 
 	SDL_GL_SwapWindow(state._window);
@@ -278,7 +279,5 @@ SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
 }
 
 void SDL_AppQuit([[maybe_unused]] void *appstate, [[maybe_unused]] SDL_AppResult result) {
-	glDeleteVertexArrays(1, &state._VAO);
-
 	SDL_GL_DestroyContext(state._context);
 }
