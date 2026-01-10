@@ -140,7 +140,7 @@ struct {
 		_shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
 		_skybox_shader = std::make_unique<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
 
-		_skybox = std::make_unique<vox::CubeTexture>("assets/texture/skybox");
+		_skybox = std::make_unique<vox::CubeTexture>("assets/texture/skybox2");
 		_grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
 		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
 		_stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");

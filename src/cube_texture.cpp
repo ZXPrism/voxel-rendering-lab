@@ -12,7 +12,7 @@ CubeTexture::CubeTexture(const std::string &cubemap_path) {
 	const std::string filename_list[6]{ "px.png", "nx.png", "py.png", "ny.png", "pz.png", "nz.png" };
 
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_texture);
-	glTextureStorage2D(_texture, 1, GL_RGBA8, 1024, 1024);  // HACK, hard code size for now
+	glTextureStorage2D(_texture, 1, GL_SRGB8_ALPHA8, 1024, 1024);  // HACK, hard code size for now
 	glTextureParameteri(_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(_texture, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
