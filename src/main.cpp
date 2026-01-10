@@ -14,14 +14,16 @@
 #include <vertex_array.h>
 #include <world.h>
 
+#include <chrono>
 #include <memory>
-#include <vector>
 
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
 constexpr glm::vec3 CAMERA_POS{ 0.01f, 80.0f, 0.0f };
 
 struct {
+	float _delta_time = 0.0f;
+
 	SDL_Window *_window;
 	SDL_GLContextState *_context;
 
@@ -104,11 +106,12 @@ struct {
 		shader->set_uniform("uBlockTextureStone", 2);
 
 		_world.render();
+		_camera.process_input(_delta_time);
 
 		SDL_GL_SwapWindow(_window);
 	}
 
-	void shutdown() {
+	void shutdown() const {
 		SDL_GL_DestroyContext(_context);
 	}
 } global_state;
@@ -133,11 +136,23 @@ SDL_AppResult SDL_AppEvent([[maybe_unused]] void *appstate, SDL_Event *event) {
 	switch (event->type) {
 	case SDL_EVENT_QUIT:
 		return SDL_APP_SUCCESS;
+	case SDL_EVENT_MOUSE_WHEEL:
+		global_state._camera.process_input_2(global_state._delta_time, event->wheel.y);
+		break;
+	default:
+		break;
 	}
 	return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate([[maybe_unused]] void *appstate) {
+	auto t = std::chrono::steady_clock::now();
+	static std::optional<decltype(t)> prev_t;
+	if (prev_t.has_value()) {
+		global_state._delta_time = std::chrono::duration_cast<std::chrono::microseconds>(t - *prev_t).count() / 1000000.0f;
+	}
+	prev_t = t;
+
 	global_state.update();
 
 	return SDL_APP_CONTINUE;

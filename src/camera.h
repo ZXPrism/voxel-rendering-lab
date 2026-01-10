@@ -12,6 +12,8 @@ public:
 	void set_perspective(float fov_y, float aspect_ratio, float near, float far);
 	[[nodiscard]] glm::mat4 get_vp_matrix() const;
 
+	virtual void process_input(float delta_time) = 0;
+
 protected:
 	glm::mat4 _view;
 	glm::mat4 _projection;
