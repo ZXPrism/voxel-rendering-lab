@@ -22,12 +22,12 @@ void OrbitCamera::process_input(float delta_time) {
 
 	_theta = glm::clamp(_theta, 0.1f, static_cast<float>(std::numbers::pi) - 0.1f);
 
-	glm::vec3 eye{
+	_pos = glm::vec3{
 		_radius * glm::sin(_theta) * glm::sin(_phi),
 		_radius * glm::cos(_theta),
 		_radius * glm::sin(_theta) * glm::cos(_phi)
 	};
-	look_at(eye, glm::vec3{ 0.0f });
+	look_at(glm::vec3{ 0.0f });
 }
 
 void OrbitCamera::process_input_2(float delta_time, float wheel_y) {

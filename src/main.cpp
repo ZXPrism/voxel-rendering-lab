@@ -20,7 +20,6 @@
 
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
-constexpr glm::vec3 CAMERA_POS{ 0.01f, 80.0f, 0.0f };
 
 // HACK: skybox test
 unsigned skyboxVAO;
@@ -145,7 +144,6 @@ struct {
 		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
 		_stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");
 
-		_camera.look_at(CAMERA_POS, glm::vec3(0, 0, 0));
 		_camera.set_perspective(
 		    glm::radians(90.0f),
 		    static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
@@ -164,7 +162,7 @@ struct {
 		auto &shader = _shader;
 		shader->use_program();
 		shader->set_uniform("uProjectionView", _camera.get_vp_matrix());
-		shader->set_uniform("uCameraPos", CAMERA_POS);
+		shader->set_uniform("uCameraPos", _camera.get_pos());
 		shader->set_uniform("uBlockTextureGrass", 0);
 		shader->set_uniform("uBlockTextureDirt", 1);
 		shader->set_uniform("uBlockTextureStone", 2);
