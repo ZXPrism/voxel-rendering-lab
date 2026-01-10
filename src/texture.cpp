@@ -10,6 +10,10 @@
 
 namespace vox {
 
+Texture::~Texture() {
+	glDeleteTextures(1, &_texture);
+}
+
 Texture::Texture(const std::string &path) {
 	int tex_width = 0;
 	int tex_height = 0;

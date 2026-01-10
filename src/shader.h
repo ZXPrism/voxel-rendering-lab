@@ -12,6 +12,7 @@ namespace vox {
 class Shader {
 public:
 	explicit Shader(const std::string &vs_path, const std::string &fs_path);
+	~Shader();
 
 	void use_program() const;
 	void set_uniform(const std::string &name, const glm::vec3 &vector);

@@ -63,6 +63,10 @@ Shader::Shader(const std::string &vs_path, const std::string &fs_path) {
 	}
 }
 
+Shader::~Shader() {
+	glDeleteProgram(_program);
+}
+
 void Shader::use_program() const {
 	glUseProgram(_program);
 }

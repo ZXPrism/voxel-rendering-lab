@@ -9,6 +9,8 @@ namespace vox {
 class Texture {
 public:
 	explicit Texture(const std::string &path);
+	~Texture();
+
 	void bind_texture(GLuint bind_point) const;
 
 private:
