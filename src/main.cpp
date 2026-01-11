@@ -173,7 +173,7 @@ SDL_AppResult SDL_AppEvent([[maybe_unused]] void *appstate, SDL_Event *event) {
 	case SDL_EVENT_QUIT:
 		return SDL_APP_SUCCESS;
 	case SDL_EVENT_MOUSE_WHEEL:
-		global_state._camera.process_input_2(global_state._delta_time, event->wheel.y);
+		global_state._camera.process_input_2(event->wheel.y);
 		break;
 	default:
 		break;

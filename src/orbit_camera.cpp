@@ -32,8 +32,8 @@ void OrbitCamera::process_input(float delta_time) {
 	look_at(glm::vec3{ 0.0f });
 }
 
-void OrbitCamera::process_input_2(float delta_time, float wheel_y) {
-	_radius -= SCROLL_SPEED * delta_time * wheel_y;
+void OrbitCamera::process_input_2(float wheel_y) {
+	_radius -= SCROLL_SPEED * wheel_y;
 	_radius = std::max(_radius, 0.1f);
 }
 
