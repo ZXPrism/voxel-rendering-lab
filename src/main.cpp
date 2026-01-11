@@ -19,8 +19,8 @@
 #include <chrono>
 #include <memory>
 
-constexpr int WINDOW_WIDTH = 1280;
-constexpr int WINDOW_HEIGHT = 960;
+constexpr int WINDOW_WIDTH = 1920;
+constexpr int WINDOW_HEIGHT = 1080;
 
 struct {
 	float _delta_time = 0.0f;

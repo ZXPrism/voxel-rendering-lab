@@ -3,9 +3,11 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
 
+#include <cassert>
+
 namespace vox {
 
-constexpr int WORLD_SIZE_LENGTH = 128;
+constexpr int WORLD_SIZE_LENGTH = 256;
 
 [[nodiscard]] Block World::get_block(int x, int y, int z) const {
 	return _world_data[(x * WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH) + (y * WORLD_SIZE_LENGTH) + z];
@@ -23,17 +25,18 @@ void World::_prep_storage() {
 	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
 		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
 			auto t = stb_perlin_fbm_noise3(
-			    static_cast<float>(x) * 0.1f, 0.0f, static_cast<float>(z) * 0.1f,
+			    static_cast<float>(x) * 0.02f, 0.0f, static_cast<float>(z) * 0.02f,
 			    2.0f,
 			    0.5f,
 			    5);
-			int height = static_cast<int>(t * 10.0f) + 10;
+			int height = static_cast<int>(t * 20.0f) + 21;
+			assert(height > 0);
 
 			for (int y = 0; y < height; y++) {
 				auto &block = get_block(x, y, z);
-				if (y <= 4) {
+				if (y <= 15) {
 					block._type = BlockType::STONE;
-				} else if (y <= 10) {
+				} else if (y <= 20) {
 					block._type = BlockType::DIRT;
 				} else {
 					block._type = BlockType::GRASS;
