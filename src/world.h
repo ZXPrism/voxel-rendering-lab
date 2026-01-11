@@ -4,22 +4,12 @@
 
 #include <block.h>
 #include <vertex_array.h>
+#include <vertices.h>
 
 #include <memory>
 #include <vector>
 
 namespace vox {
-
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 normal;
-	glm::vec2 uv;
-};
-
-struct Instance {
-	glm::vec3 translation;
-	int texture;
-};
 
 class World {
 public:

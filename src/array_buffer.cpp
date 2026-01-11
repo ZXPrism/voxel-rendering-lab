@@ -2,11 +2,11 @@
 
 namespace vox {
 
-ArrayBuffer::ArrayBuffer(const uint8_t *data, int n_bytes) {
+ArrayBuffer::ArrayBuffer(const uint8_t *data, int n_bytes, GLbitfield usage) {
 	glCreateBuffers(1, &_handle);
 
 	// TODO: for maximum perf we may need to tweak buffer flags
-	glNamedBufferStorage(_handle, n_bytes, data, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(_handle, n_bytes, data, usage);
 }
 
 ArrayBuffer::~ArrayBuffer() {

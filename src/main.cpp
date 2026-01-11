@@ -13,6 +13,7 @@
 #include <shader.h>
 #include <texture.h>
 #include <vertex_array.h>
+#include <vertices.h>
 #include <world.h>
 
 #include <chrono>
@@ -20,10 +21,6 @@
 
 constexpr int WINDOW_WIDTH = 1280;
 constexpr int WINDOW_HEIGHT = 960;
-
-// HACK: skybox test
-unsigned skyboxVAO;
-unsigned skyboxVBO;
 
 struct {
 	float _delta_time = 0.0f;
@@ -40,6 +37,9 @@ struct {
 	std::unique_ptr<vox::Texture> _grass_block;
 	std::unique_ptr<vox::Texture> _dirt_block;
 	std::unique_ptr<vox::Texture> _stone_block;
+
+	std::unique_ptr<vox::VertexArray> _skybox_vertex_array;
+	std::unique_ptr<vox::ArrayBuffer> _skybox_data;
 
 	vox::World _world;
 
@@ -78,60 +78,6 @@ struct {
 
 		SDL_GL_SetSwapInterval(0);  // no vsync
 
-		// HACK: skybox test
-		float skyboxVertices[] = {
-			// positions
-			-1.0f, 1.0f, -1.0f,
-			-1.0f, -1.0f, -1.0f,
-			1.0f, -1.0f, -1.0f,
-			1.0f, -1.0f, -1.0f,
-			1.0f, 1.0f, -1.0f,
-			-1.0f, 1.0f, -1.0f,
-
-			-1.0f, -1.0f, 1.0f,
-			-1.0f, -1.0f, -1.0f,
-			-1.0f, 1.0f, -1.0f,
-			-1.0f, 1.0f, -1.0f,
-			-1.0f, 1.0f, 1.0f,
-			-1.0f, -1.0f, 1.0f,
-
-			1.0f, -1.0f, -1.0f,
-			1.0f, -1.0f, 1.0f,
-			1.0f, 1.0f, 1.0f,
-			1.0f, 1.0f, 1.0f,
-			1.0f, 1.0f, -1.0f,
-			1.0f, -1.0f, -1.0f,
-
-			-1.0f, -1.0f, 1.0f,
-			-1.0f, 1.0f, 1.0f,
-			1.0f, 1.0f, 1.0f,
-			1.0f, 1.0f, 1.0f,
-			1.0f, -1.0f, 1.0f,
-			-1.0f, -1.0f, 1.0f,
-
-			-1.0f, 1.0f, -1.0f,
-			1.0f, 1.0f, -1.0f,
-			1.0f, 1.0f, 1.0f,
-			1.0f, 1.0f, 1.0f,
-			-1.0f, 1.0f, 1.0f,
-			-1.0f, 1.0f, -1.0f,
-
-			-1.0f, -1.0f, -1.0f,
-			-1.0f, -1.0f, 1.0f,
-			1.0f, -1.0f, -1.0f,
-			1.0f, -1.0f, -1.0f,
-			-1.0f, -1.0f, 1.0f,
-			1.0f, -1.0f, 1.0f
-		};
-		// skybox VAO
-		glGenVertexArrays(1, &skyboxVAO);
-		glGenBuffers(1, &skyboxVBO);
-		glBindVertexArray(skyboxVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-
 		return true;
 	}
 
@@ -143,6 +89,18 @@ struct {
 		_grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
 		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
 		_stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");
+
+		// skybox
+		_skybox_vertex_array = std::make_unique<vox::VertexArray>();
+		_skybox_data = std::make_unique<vox::ArrayBuffer>(
+		    reinterpret_cast<const uint8_t *>(vox::skybox_vertices),
+		    static_cast<int>(sizeof(vox::skybox_vertices)),
+		    0);
+
+		glVertexArrayVertexBuffer(_skybox_vertex_array->_handle, 0, _skybox_data->_handle, 0, sizeof(vox::SkyboxVertex));
+		glVertexArrayAttribBinding(_skybox_vertex_array->_handle, 0, 0);
+		glVertexArrayAttribFormat(_skybox_vertex_array->_handle, 0, 3, GL_FLOAT, GL_FALSE, 0);
+		glEnableVertexArrayAttrib(_skybox_vertex_array->_handle, 0);
 
 		_camera.set_perspective(
 		    glm::radians(90.0f),
@@ -179,7 +137,7 @@ struct {
 		_skybox_shader->set_uniform("uView", glm::mat4(glm::mat3(_camera.get_view_matrix())));
 		_skybox->bind_texture(0);
 		glDepthFunc(GL_LEQUAL);
-		glBindVertexArray(skyboxVAO);
+		_skybox_vertex_array->use();
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
 

@@ -15,9 +15,9 @@ private:
 	const float ROTATE_SPEED = 1.0f;
 	const float SCROLL_SPEED = 1000.0f;
 
-	float _radius = 60.0f;
-	float _theta = static_cast<float>(std::numbers::pi / 4.0);
-	float _phi = static_cast<float>(std::numbers::pi / 4.0);
+	float _radius = 85.0f;
+	float _theta = 0.0f;
+	float _phi = 0.0f;
 };
 
 }  // namespace vox
