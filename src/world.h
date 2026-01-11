@@ -30,6 +30,8 @@ private:
 
 	int _voxel_cnt = 0;
 	std::vector<Block> _world_data;
+
+	std::vector<int> _face_cnt;
 };
 
 }  // namespace vox

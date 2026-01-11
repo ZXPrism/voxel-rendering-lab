@@ -3,6 +3,7 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb_perlin.h>
 
+#include <algorithm>
 #include <cassert>
 
 namespace vox {
@@ -86,26 +87,48 @@ void World::_prep_render() {
 	// instancing VBO
 	std::vector<Instance> instance_data;
 
-	for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
-		for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
-			for (int y = 0; y < WORLD_SIZE_LENGTH; y++) {
-				auto &block = get_block(x, y, z);
+	auto is_valid_pos = [](int x, int y, int z) -> bool {
+		return x >= 0 && x < WORLD_SIZE_LENGTH &&
+		       y >= 0 && y < WORLD_SIZE_LENGTH &&
+		       z >= 0 && z < WORLD_SIZE_LENGTH;
+	};
 
-				int texture = 0;
-				switch (block._type) {
-				case BlockType::GRASS: texture = 0; break;
-				case BlockType::DIRT: texture = 1; break;
-				case BlockType::STONE: texture = 2; break;
-				default: break;
-				}
+	const int dx[]{ 1, -1, 0, 0, 0, 0 };
+	const int dy[]{ 0, 0, 1, -1, 0, 0 };
+	const int dz[]{ 0, 0, 0, 0, 1, -1 };
 
-				if (block._type != BlockType::AIR) {
-					instance_data.emplace_back(
-					    glm::vec3{
-					        static_cast<float>(x - (WORLD_SIZE_LENGTH / 2)),
-					        static_cast<float>(y),
-					        static_cast<float>(z - (WORLD_SIZE_LENGTH / 2)) },
-					    texture);
+	_face_cnt.resize(6);
+	std::ranges::fill(_face_cnt, 0);
+
+	for (int d = 0; d < 6; d++) {
+		for (int x = 0; x < WORLD_SIZE_LENGTH; x++) {
+			for (int z = 0; z < WORLD_SIZE_LENGTH; z++) {
+				for (int y = 0; y < WORLD_SIZE_LENGTH; y++) {
+					auto &block = get_block(x, y, z);
+
+					if (block._type != BlockType::AIR) {
+						int nx = x + dx[d];
+						int ny = y + dy[d];
+						int nz = z + dz[d];
+
+						int texture = 0;
+						switch (block._type) {
+						case BlockType::GRASS: texture = 0; break;
+						case BlockType::DIRT: texture = 1; break;
+						case BlockType::STONE: texture = 2; break;
+						default: break;
+						}
+
+						if (!is_valid_pos(nx, ny, nz) || get_block(nx, ny, nz)._type == BlockType::AIR) {
+							instance_data.emplace_back(
+							    glm::vec3{
+							        static_cast<float>(x - (WORLD_SIZE_LENGTH / 2)),
+							        static_cast<float>(y),
+							        static_cast<float>(z - (WORLD_SIZE_LENGTH / 2)) },
+							    texture);
+							++_face_cnt[d];
+						}
+					}
 				}
 			}
 		}
@@ -136,7 +159,12 @@ void World::generate() {
 
 void World::render() {
 	_vertex_array->use();
-	glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr, _voxel_cnt);
+
+	int base_instance = 0;
+	for (int d = 0; d < 6; d++) {
+		glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, _face_cnt[d], 4 * d, base_instance);
+		base_instance += _face_cnt[d];
+	}
 }
 
 }  // namespace vox
