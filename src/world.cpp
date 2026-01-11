@@ -8,8 +8,6 @@
 
 namespace vox {
 
-constexpr int WORLD_SIZE_LENGTH = 256;
-
 [[nodiscard]] Block World::get_block(int x, int y, int z) const {
 	return _world_data[(x * WORLD_SIZE_LENGTH * WORLD_SIZE_LENGTH) + (y * WORLD_SIZE_LENGTH) + z];
 }

@@ -2,8 +2,6 @@
 
 #include <camera.h>
 
-#include <numbers>
-
 namespace vox {
 
 class OrbitCamera : public Camera {

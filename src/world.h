@@ -11,6 +11,8 @@
 
 namespace vox {
 
+[[maybe_unused]] constexpr int WORLD_SIZE_LENGTH = 256;
+
 class World {
 public:
 	void generate();

@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <numbers>
+
 namespace vox {
 
 void OrbitCamera::process_input(float delta_time) {
