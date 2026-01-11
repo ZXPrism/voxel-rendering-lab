@@ -35,4 +35,8 @@ void OrbitCamera::process_input_2(float delta_time, float wheel_y) {
 	_radius = std::max(_radius, 0.1f);
 }
 
+glm::vec3 OrbitCamera::get_view_ray() {
+	return -_pos;
+}
+
 }  // namespace vox

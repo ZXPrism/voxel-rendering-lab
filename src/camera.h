@@ -16,6 +16,7 @@ public:
 	[[nodiscard]] glm::mat4 get_view_matrix() const;
 	[[nodiscard]] glm::mat4 get_projection_matrix() const;
 
+	[[nodiscard]] virtual glm::vec3 get_view_ray() = 0;
 	virtual void process_input(float delta_time) = 0;
 
 protected:

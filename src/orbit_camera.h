@@ -11,6 +11,8 @@ public:
 	void process_input(float delta_time) override;
 	void process_input_2(float delta_time, float wheel_y);  // HACK, refactor later
 
+	glm::vec3 get_view_ray() override;
+
 private:
 	const float ROTATE_SPEED = 1.0f;
 	const float SCROLL_SPEED = 1000.0f;
