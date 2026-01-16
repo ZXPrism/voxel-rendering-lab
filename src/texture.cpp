@@ -36,6 +36,10 @@ Texture::Texture(const std::string &path) {
 	stbi_image_free(tex_src);
 }
 
+GLuint Texture::get_handle() const {
+	return _texture;
+}
+
 void Texture::bind_texture(GLuint bind_point) const {
 	glBindTextureUnit(bind_point, _texture);
 }

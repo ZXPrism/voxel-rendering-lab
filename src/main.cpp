@@ -10,6 +10,7 @@
 #include <cube_texture.h>
 #include <logger.h>
 #include <orbit_camera.h>
+#include <render_pass.h>
 #include <shader.h>
 #include <texture.h>
 #include <vertex_array.h>
@@ -40,6 +41,10 @@ struct {
 
 	std::unique_ptr<vox::VertexArray> _skybox_vertex_array;
 	std::unique_ptr<vox::ArrayBuffer> _skybox_data;
+
+	std::optional<vox::RenderPass> _geometry_pass;
+	std::optional<vox::RenderPass> _color_pass;
+	std::optional<vox::RenderPass> _default_pass;
 
 	vox::World _world;
 
@@ -85,9 +90,11 @@ struct {
 	}
 
 	void prep() {
+		// shaders
 		_shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
 		_skybox_shader = std::make_unique<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
 
+		// textures
 		_skybox = std::make_unique<vox::CubeTexture>("assets/texture/skybox");
 		_grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
 		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
@@ -105,44 +112,61 @@ struct {
 		glVertexArrayAttribFormat(_skybox_vertex_array->_handle, 0, 3, GL_FLOAT, GL_FALSE, 0);
 		glEnableVertexArrayAttrib(_skybox_vertex_array->_handle, 0);
 
+		// camera
 		_camera.set_perspective(
 		    glm::radians(90.0f),
 		    static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT),
 		    0.1f, 1000.0f);
 
+		// world
 		_world.generate();
+
+		// deferred
+		// _geometry_pass = vox::RenderPass::RenderPassBuilder("geometry_pass")
+		//                      .add_color_attachment(color_r, true, { 1.0, 0.0, 0.0, 1.0 })
+		//                      .add_color_attachment(color_g, true, { 0.0, 1.0, 0.0, 1.0 })
+		//                      .add_color_attachment(color_b, true, { 0.0, 0.0, 1.0, 1.0 })
+		//                      .build();
+		// _color_pass = vox::RenderPass::RenderPassBuilder("color_pass")
+		//                   .add_color_attachment(color_r, true, { 1.0, 0.0, 0.0, 1.0 })
+		//                   .add_color_attachment(color_g, true, { 0.0, 1.0, 0.0, 1.0 })
+		//                   .add_color_attachment(color_b, true, { 0.0, 0.0, 1.0, 1.0 })
+		//                   .build();
+		_default_pass = vox::RenderPass::RenderPassBuilder("default_pass").build();
 	}
 
 	void update() {
+
 		// logic
 		_camera.process_input(_delta_time);
 
 		// render
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		auto default_pass_config = vox::RenderPassConfig{ ._enable_depth_test = true, ._enable_srgb = false };
+		_default_pass->use(default_pass_config, [&]() {
+			auto &shader = _shader;
+			shader->use_program();
+			shader->set_uniform("uProjectionView", _camera.get_vp_matrix());
+			shader->set_uniform("uCameraPos", _camera.get_pos());
+			shader->set_uniform("uBlockTextureGrass", 0);
+			shader->set_uniform("uBlockTextureDirt", 1);
+			shader->set_uniform("uBlockTextureStone", 2);
 
-		auto &shader = _shader;
-		shader->use_program();
-		shader->set_uniform("uProjectionView", _camera.get_vp_matrix());
-		shader->set_uniform("uCameraPos", _camera.get_pos());
-		shader->set_uniform("uBlockTextureGrass", 0);
-		shader->set_uniform("uBlockTextureDirt", 1);
-		shader->set_uniform("uBlockTextureStone", 2);
+			_grass_block->bind_texture(0);
+			_dirt_block->bind_texture(1);
+			_stone_block->bind_texture(2);
 
-		_grass_block->bind_texture(0);
-		_dirt_block->bind_texture(1);
-		_stone_block->bind_texture(2);
+			_world.render();
 
-		_world.render();
-
-		_skybox_shader->use_program();
-		_skybox_shader->set_uniform("uSkyboxTexture", 0);
-		_skybox_shader->set_uniform("uProjection", _camera.get_projection_matrix());
-		_skybox_shader->set_uniform("uView", glm::mat4(glm::mat3(_camera.get_view_matrix())));
-		_skybox->bind_texture(0);
-		glDepthFunc(GL_LEQUAL);
-		_skybox_vertex_array->use();
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDepthFunc(GL_LESS);
+			_skybox_shader->use_program();
+			_skybox_shader->set_uniform("uSkyboxTexture", 0);
+			_skybox_shader->set_uniform("uProjection", _camera.get_projection_matrix());
+			_skybox_shader->set_uniform("uView", glm::mat4(glm::mat3(_camera.get_view_matrix())));
+			_skybox->bind_texture(0);
+			glDepthFunc(GL_LEQUAL);
+			_skybox_vertex_array->use();
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glDepthFunc(GL_LESS);
+		});
 
 		SDL_GL_SwapWindow(_window);
 	}
@@ -153,7 +177,7 @@ struct {
 } global_state;
 
 SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
-	SDL_SetAppMetadata("vox", "1.0", "com.example.renderer-clear");
+	SDL_SetAppMetadata("vox", "1.0", "com.zxp4.voxelrenderinglab");
 
 	if (!global_state.init()) {
 		return SDL_APP_FAILURE;
