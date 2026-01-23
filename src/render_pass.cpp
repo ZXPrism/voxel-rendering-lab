@@ -10,57 +10,57 @@ RenderPass::RenderPassBuilder::RenderPassBuilder(const std::string &name)
     : IBuilder(name) {
 }
 
-RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::add_color_attachment(const Texture &texture, bool clear_before_use, const glm::vec4 &clear_value_rgba) {
+RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::add_color_attachment(const std::shared_ptr<Texture> &texture, bool clear_before_use, const glm::vec4 &clear_value_rgba) {
 	_color_attachments.push_back(texture);
 	_color_attachment_clear_flags.push_back(clear_before_use);
 	_color_attachment_clear_values.push_back(clear_value_rgba);
 	return *this;
 }
 
-RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::set_depth_attachment(const Texture &texture) {
+RenderPass::RenderPassBuilder &RenderPass::RenderPassBuilder::set_depth_attachment(const std::shared_ptr<Texture> &texture) {
 	_depth_attachment = texture;
 	return *this;
 }
 
-RenderPass RenderPass::RenderPassBuilder::_build() const {
-	RenderPass res;
+std::shared_ptr<RenderPass> RenderPass::RenderPassBuilder::_build() const {
+	auto res = std::make_shared<RenderPass>();
 
-	res._set_name(_name);
+	res->_set_name(_name);
 
 	size_t n_color_attachments = _color_attachments.size();
-	res._color_attachments = _color_attachments;
-	res._color_attachment_clear_flags = _color_attachment_clear_flags;
-	res._color_attachment_clear_values = _color_attachment_clear_values;
+	res->_color_attachments = _color_attachments;
+	res->_color_attachment_clear_flags = _color_attachment_clear_flags;
+	res->_color_attachment_clear_values = _color_attachment_clear_values;
 
-	res._IsDefault = n_color_attachments == 0 && !_depth_attachment.has_value();  // no attachments, fallback to default FBO
+	res->_IsDefault = n_color_attachments == 0 && !_depth_attachment.has_value();  // no attachments, fallback to default FBO
 
 	auto *fbo_raw_handle = new GLuint(0);
-	res._FBO = std::shared_ptr<GLuint>(fbo_raw_handle, [=](GLuint *ptr) {
-		if (!res._IsDefault) {  // if fallback, the delete is handled by the window system, no need to manually delete it
+	res->_FBO = std::shared_ptr<GLuint>(fbo_raw_handle, [=](GLuint *ptr) {
+		if (!res->_IsDefault) {  // if fallback, the delete is handled by the window system, no need to manually delete it
 			glDeleteFramebuffers(1, ptr);
 		}
 		delete ptr;
 	});
 
-	if (res._IsDefault) {
+	if (res->_IsDefault) {
 		SPDLOG_INFO("RenderPass::RenderPassBuilder ({}): successfully built default render pass", _name);
 		return res;
 	}
 
-	glGenFramebuffers(1, res._FBO.get());
-	glBindFramebuffer(GL_FRAMEBUFFER, *res._FBO);
+	glGenFramebuffers(1, res->_FBO.get());
+	glBindFramebuffer(GL_FRAMEBUFFER, *res->_FBO);
 
 	std::vector<GLenum> attachments(n_color_attachments);
 
 	for (size_t i = 0; i < n_color_attachments; i++) {
-		auto texture_handle = res._color_attachments[i].get_handle();
+		auto texture_handle = res->_color_attachments[i]->get_handle();
 		attachments[i] = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + i);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachments[i], GL_TEXTURE_2D, texture_handle, 0);
 	}
 
 	if (_depth_attachment.has_value()) {
-		res._depth_attachment = _depth_attachment;
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, res._depth_attachment->get_handle(), 0);
+		res->_depth_attachment = _depth_attachment;
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, (*(res->_depth_attachment))->get_handle(), 0);
 	}
 
 	glDrawBuffers(static_cast<GLsizei>(n_color_attachments), attachments.data());
@@ -74,7 +74,7 @@ RenderPass RenderPass::RenderPassBuilder::_build() const {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	res._set_complete();
+	res->_set_complete();
 
 	return res;
 }

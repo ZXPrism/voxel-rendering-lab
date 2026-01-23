@@ -23,28 +23,32 @@
 constexpr int WINDOW_WIDTH = 1920;
 constexpr int WINDOW_HEIGHT = 1080;
 
+// ==============
+//  global state
+// ==============
+
 struct {
 	float _delta_time = 0.0f;
 
 	SDL_Window *_window;
 	SDL_GLContextState *_context;
 
-	std::unique_ptr<vox::Shader> _shader;
-	std::unique_ptr<vox::Shader> _skybox_shader;
+	std::shared_ptr<vox::Shader> _shader;
+	std::shared_ptr<vox::Shader> _skybox_shader;
 
 	vox::OrbitCamera _camera;
 
-	std::unique_ptr<vox::CubeTexture> _skybox;
-	std::unique_ptr<vox::Texture> _grass_block;
-	std::unique_ptr<vox::Texture> _dirt_block;
-	std::unique_ptr<vox::Texture> _stone_block;
+	std::shared_ptr<vox::CubeTexture> _skybox;
+	std::shared_ptr<vox::Texture> _grass_block;
+	std::shared_ptr<vox::Texture> _dirt_block;
+	std::shared_ptr<vox::Texture> _stone_block;
 
-	std::unique_ptr<vox::VertexArray> _skybox_vertex_array;
-	std::unique_ptr<vox::ArrayBuffer> _skybox_data;
+	std::shared_ptr<vox::VertexArray> _skybox_vertex_array;
+	std::shared_ptr<vox::ArrayBuffer> _skybox_data;
 
-	std::optional<vox::RenderPass> _geometry_pass;
-	std::optional<vox::RenderPass> _color_pass;
-	std::optional<vox::RenderPass> _default_pass;
+	std::shared_ptr<vox::RenderPass> _geometry_pass;
+	std::shared_ptr<vox::RenderPass> _color_pass;
+	std::shared_ptr<vox::RenderPass> _default_pass;
 
 	vox::World _world;
 
@@ -91,18 +95,18 @@ struct {
 
 	void prep() {
 		// shaders
-		_shader = std::make_unique<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
-		_skybox_shader = std::make_unique<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
+		_shader = std::make_shared<vox::Shader>("assets/shader/cube.vert", "assets/shader/cube.frag");
+		_skybox_shader = std::make_shared<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
 
 		// textures
-		_skybox = std::make_unique<vox::CubeTexture>("assets/texture/skybox");
-		_grass_block = std::make_unique<vox::Texture>("assets/texture/grass_block.png");
-		_dirt_block = std::make_unique<vox::Texture>("assets/texture/dirt_block.png");
-		_stone_block = std::make_unique<vox::Texture>("assets/texture/stone_block.png");
+		_skybox = std::make_shared<vox::CubeTexture>("assets/texture/skybox");
+		_grass_block = std::make_shared<vox::Texture>("assets/texture/grass_block.png");
+		_dirt_block = std::make_shared<vox::Texture>("assets/texture/dirt_block.png");
+		_stone_block = std::make_shared<vox::Texture>("assets/texture/stone_block.png");
 
 		// skybox
-		_skybox_vertex_array = std::make_unique<vox::VertexArray>();
-		_skybox_data = std::make_unique<vox::ArrayBuffer>(
+		_skybox_vertex_array = std::make_shared<vox::VertexArray>();
+		_skybox_data = std::make_shared<vox::ArrayBuffer>(
 		    reinterpret_cast<const uint8_t *>(vox::skybox_vertices),
 		    static_cast<int>(sizeof(vox::skybox_vertices)),
 		    0);
@@ -175,6 +179,10 @@ struct {
 		SDL_GL_DestroyContext(_context);
 	}
 } global_state;
+
+// ===============
+//  SDL callbacks
+// ===============
 
 SDL_AppResult SDL_AppInit([[maybe_unused]] void **appstate, [[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
 	SDL_SetAppMetadata("vox", "1.0", "com.zxp4.voxelrenderinglab");

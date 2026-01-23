@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -14,7 +15,7 @@ public:
 
 	[[nodiscard]] std::string get_name() const { return _name; }
 
-	[[nodiscard]] BuildTarget build() const {
+	[[nodiscard]] std::shared_ptr<BuildTarget> build() const {
 		return static_cast<const Derived *>(this)->_build();
 	}
 
