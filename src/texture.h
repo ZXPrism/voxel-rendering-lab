@@ -19,13 +19,6 @@ struct TextureFormat {
 class Texture : public IBuildTarget<Texture> {
 public:
 	class TextureBuilder : public IBuilder<TextureBuilder, Texture> {
-	private:
-		std::optional<GLenum> _type;
-		std::optional<std::pair<size_t, size_t>> _size;
-		std::optional<TextureFormat> _format;
-		std::optional<GLint> _filter;
-		std::optional<std::string> _data_path;
-
 	public:
 		TextureBuilder(const std::string &name);
 
@@ -36,6 +29,13 @@ public:
 		TextureBuilder &set_data_path(const std::string &path);
 
 		[[nodiscard]] std::shared_ptr<Texture> _build() const;
+
+	private:
+		std::optional<GLenum> _type;
+		std::optional<std::pair<size_t, size_t>> _size;
+		std::optional<TextureFormat> _format;
+		std::optional<GLint> _filter;
+		std::optional<std::string> _data_path;
 	};
 
 	Texture() = default;
