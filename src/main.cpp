@@ -7,7 +7,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array_buffer.h>
-#include <cube_texture.h>
 #include <logger.h>
 #include <orbit_camera.h>
 #include <render_pass.h>
