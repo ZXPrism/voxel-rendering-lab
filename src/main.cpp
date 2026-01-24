@@ -38,7 +38,7 @@ struct {
 
 	vox::OrbitCamera _camera;
 
-	std::shared_ptr<vox::CubeTexture> _skybox;
+	std::shared_ptr<vox::Texture> _skybox;
 	std::shared_ptr<vox::Texture> _grass_block;
 	std::shared_ptr<vox::Texture> _dirt_block;
 	std::shared_ptr<vox::Texture> _stone_block;
@@ -99,10 +99,30 @@ struct {
 		_skybox_shader = std::make_shared<vox::Shader>("assets/shader/skybox.vert", "assets/shader/skybox.frag");
 
 		// textures
-		_skybox = std::make_shared<vox::CubeTexture>("assets/texture/skybox");
-		_grass_block = std::make_shared<vox::Texture>("assets/texture/grass_block.png");
-		_dirt_block = std::make_shared<vox::Texture>("assets/texture/dirt_block.png");
-		_stone_block = std::make_shared<vox::Texture>("assets/texture/stone_block.png");
+		_skybox = vox::Texture::TextureBuilder("grass block")
+		              .set_data_path("assets/texture/skybox")
+		              .set_type(GL_TEXTURE_CUBE_MAP)
+		              .set_format(GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE)
+		              .set_filter(GL_NEAREST)
+		              .build();
+		_grass_block = vox::Texture::TextureBuilder("grass block")
+		                   .set_data_path("assets/texture/grass_block.png")
+		                   .set_type(GL_TEXTURE_2D)
+		                   .set_format(GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE)
+		                   .set_filter(GL_NEAREST)
+		                   .build();
+		_dirt_block = vox::Texture::TextureBuilder("dirt block")
+		                  .set_data_path("assets/texture/dirt_block.png")
+		                  .set_type(GL_TEXTURE_2D)
+		                  .set_format(GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE)
+		                  .set_filter(GL_NEAREST)
+		                  .build();
+		_stone_block = vox::Texture::TextureBuilder("stone block")
+		                   .set_data_path("assets/texture/stone_block.png")
+		                   .set_type(GL_TEXTURE_2D)
+		                   .set_format(GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE)
+		                   .set_filter(GL_NEAREST)
+		                   .build();
 
 		// skybox
 		_skybox_vertex_array = std::make_shared<vox::VertexArray>();
